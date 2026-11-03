@@ -1,68 +1,96 @@
-import { Chess, type Square } from 'chess.js';
+import type { Square } from 'chess.js';
 
 export type EngineMove = { from: Square; to: Square; promotion?: 'q' | 'r' | 'b' | 'n' };
 
-const pieceValue: Record<string, number> = { p: 100, n: 315, b: 330, r: 500, q: 900, k: 20_000 };
+let engineWorker: Worker | null = null;
+let engineReady: Promise<Worker> | null = null;
+let resolveMove: ((move: EngineMove | null) => void) | null = null;
+let rejectMove: ((error: Error) => void) | null = null;
+let searchTimeout: number | null = null;
 
-function evaluate(game: Chess): number {
-  if (game.isCheckmate()) return -100_000;
-  if (game.isDraw()) return 0;
-  let score = 0;
-  const board = game.board();
-  for (let rank = 0; rank < 8; rank++) {
-    for (let file = 0; file < 8; file++) {
-      const piece = board[rank][file];
-      if (!piece) continue;
-      const value = pieceValue[piece.type] || 0;
-      const advance = piece.color === 'w' ? 6 - rank : rank - 1;
-      const centerDistance = Math.abs(3.5 - file) + Math.abs(3.5 - rank);
-      const positional = piece.type === 'p' ? advance * 7 : piece.type === 'n' || piece.type === 'b' ? (7 - centerDistance) * 5 : 0;
-      const signed = value + positional;
-      score += piece.color === game.turn() ? signed : -signed;
-    }
-  }
-  if (game.isCheck()) score -= 28;
-  return score;
+function getEngine(): Promise<Worker> {
+  if (engineReady) return engineReady;
+
+  engineReady = new Promise<Worker>((resolve, reject) => {
+    const worker = new Worker('/stockfish/stockfish-19-lite-single.js');
+    engineWorker = worker;
+    const handshakeTimeout = window.setTimeout(() => {
+      engineReady = null;
+      worker.terminate();
+      engineWorker = null;
+      reject(new Error('Stockfish took too long to initialize.'));
+    }, 30000);
+
+    worker.onerror = () => {
+      window.clearTimeout(handshakeTimeout);
+      engineReady = null;
+      engineWorker = null;
+      worker.terminate();
+      reject(new Error('Stockfish could not be loaded.'));
+    };
+
+    worker.onmessage = (event: MessageEvent<string>) => {
+      const line = String(event.data).trim();
+      if (line === 'uciok') {
+        worker.postMessage('setoption name Threads value 1');
+        worker.postMessage('isready');
+      } else if (line === 'readyok') {
+        window.clearTimeout(handshakeTimeout);
+        resolve(worker);
+      } else if (line.startsWith('bestmove ')) {
+        if (searchTimeout !== null) window.clearTimeout(searchTimeout);
+        searchTimeout = null;
+        const uci = line.split(/\s+/)[1];
+        const move = uci && uci !== '(none)' && uci.length >= 4
+          ? {
+              from: uci.slice(0, 2) as Square,
+              to: uci.slice(2, 4) as Square,
+              ...(uci.length > 4 ? { promotion: uci[4] as 'q' | 'r' | 'b' | 'n' } : {}),
+            }
+          : null;
+        resolveMove?.(move);
+        resolveMove = null;
+        rejectMove = null;
+      }
+    };
+
+    worker.postMessage('uci');
+  });
+
+  return engineReady;
 }
 
-function negamax(game: Chess, depth: number, alpha: number, beta: number): number {
-  if (game.isGameOver() || depth === 0) return evaluate(game);
-  let best = -Infinity;
-  for (const move of game.moves({ verbose: true })) {
-    const next = new Chess(game.fen());
-    next.move({ from: move.from, to: move.to, ...(move.promotion ? { promotion: move.promotion as 'q' | 'r' | 'b' | 'n' } : {}) });
-    const score = -negamax(next, depth - 1, -beta, -alpha);
-    best = Math.max(best, score);
-    if (alpha >= beta) break;
-  }
-  return best;
+/** Uses the Stockfish 19 WASM engine in a dedicated worker; positions stay in the browser. */
+export async function findStockfishMove(fen: string, skillLevel = 10): Promise<EngineMove | null> {
+  const worker = await getEngine();
+  if (resolveMove) throw new Error('Stockfish is already calculating a move.');
+  const level = Math.max(1, Math.min(10, Math.round(skillLevel)));
+  const skill = Math.round((level - 1) * 20 / 9);
+  const depth = 7 + (level - 1) * 2;
+
+  return new Promise<EngineMove | null>((resolve, reject) => {
+    resolveMove = resolve;
+    rejectMove = reject;
+    searchTimeout = window.setTimeout(() => {
+      worker.postMessage('stop');
+      rejectMove?.(new Error('Stockfish search timed out.'));
+      resolveMove = null;
+      rejectMove = null;
+      searchTimeout = null;
+    }, 15000);
+    worker.postMessage(`setoption name Skill Level value ${skill}`);
+    worker.postMessage(`position fen ${fen}`);
+    worker.postMessage(`go depth ${depth} movetime ${level === 10 ? 8000 : 500 + level * 650}`);
+  });
 }
 
-/** Skill 1 plays varied plausible moves; skill 10 consistently selects the strongest searched move. */
-export function findBestMove(game: Chess, depth = 2, skillLevel = 10): EngineMove | null {
-  if (game.isGameOver()) return null;
-  const skill = Math.max(1, Math.min(10, Math.round(skillLevel)));
-  const scored: Array<{ move: EngineMove; score: number }> = [];
-  for (const move of game.moves({ verbose: true })) {
-    const next = new Chess(game.fen());
-    next.move({ from: move.from, to: move.to, ...(move.promotion ? { promotion: move.promotion as 'q' | 'r' | 'b' | 'n' } : {}) });
-    const score = -negamax(next, Math.max(0, depth - 1), -Infinity, Infinity);
-    scored.push({
-      move: { from: move.from, to: move.to, ...(move.promotion ? { promotion: move.promotion as 'q' | 'r' | 'b' | 'n' } : {}) },
-      score,
-    });
-    alpha = Math.max(alpha, score);
+export function cancelStockfishSearch() {
+  if (resolveMove) {
+    engineWorker?.postMessage('stop');
+    if (searchTimeout !== null) window.clearTimeout(searchTimeout);
+    searchTimeout = null;
+    rejectMove?.(new Error('Stockfish search cancelled.'));
+    resolveMove = null;
+    rejectMove = null;
   }
-  scored.sort((a, b) => b.score - a.score);
-  if (!scored.length) return null;
-  const poolSize = Math.max(1, Math.ceil(scored.length * (0.82 - skill * 0.078)));
-  const pool = scored.slice(0, poolSize);
-  const weights = pool.map((_, index) => Math.pow(pool.length - index, skill / 3));
-  const total = weights.reduce((sum, weight) => sum + weight, 0);
-  let ticket = Math.random() * total;
-  for (let index = 0; index < pool.length; index++) {
-    ticket -= weights[index];
-    if (ticket <= 0) return pool[index].move;
-  }
-  return pool[0].move;
 }
