@@ -5,8 +5,8 @@ The real-time MVP uses Socket.IO and validates every move on the server with `ch
 ## Local setup
 
 1. Configure the dedicated CHECKMATE Firebase Web App in `.env`.
-2. Configure server credentials using Google Application Default Credentials or `GOOGLE_APPLICATION_CREDENTIALS` for the CHECKMATE Firebase project.
-3. Copy `.env.server.example` to `.env.server` only if your process manager loads it; otherwise export the values in the server environment.
+2. Add `FIREBASE_PROJECT_ID`, `CLIENT_ORIGIN`, and (if needed) `GOOGLE_APPLICATION_CREDENTIALS` to the root `.env` file. The server loads root `.env` using dotenv; Vite only exposes variables prefixed with `VITE_` to browser code.
+3. Configure Google Application Default Credentials for the CHECKMATE Firebase project. Never commit a service-account JSON file.
 4. Start both processes:
 
 ```bash
