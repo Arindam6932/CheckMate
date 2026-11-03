@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/auth-context';
 import { collection, limit, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { ArrowLeft, Crown, Medal, Trophy } from 'lucide-react';
 import { db } from '../lib/firebase';
@@ -7,20 +8,28 @@ import { db } from '../lib/firebase';
 type Leader = { uid: string; displayName: string; photoURL?: string; ratings?: { rapid?: number; blitz?: number; classical?: number }; stats?: { gamesPlayed?: number; wins?: number } };
 
 export default function LeaderboardPage() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const [leaders, setLeaders] = useState<Leader[]>([]);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState('');
   const [category, setCategory] = useState<'rapid'|'blitz'|'classical'>('rapid');
 
   useEffect(() => {
-    if (!db) { setBusy(false); return; }
+    if (!loading && !user) navigate('/auth?mode=login', { replace: true });
+  }, [loading, user, navigate]);
+
+  useEffect(() => {
+    if (!db || !user) { setBusy(false); return; }
     setBusy(true); setError('');
     const leadersQuery = query(collection(db, 'publicProfiles'), orderBy(`ratings.${category}`, 'desc'), limit(50));
     return onSnapshot(leadersQuery, snapshot => {
       setLeaders(snapshot.docs.map(item => ({ ...item.data(), uid: item.id } as Leader)));
       setBusy(false);
     }, err => { setError(err.message); setBusy(false); });
-  }, [category]);
+  }, [category, user]);
+
+  if (loading || !user) return <main className="leaderboard-loading">Loading leaderboards…</main>;
 
   return <main className="leaderboard-screen">
     <header className="leaderboard-header"><Link to="/" className="online-back"><ArrowLeft size={16}/> CHECKMATE</Link><span className="online-eyebrow">THE COMPETITIVE LADDER</span></header>
