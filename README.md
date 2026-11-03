@@ -23,7 +23,14 @@
 - Account screen at `/auth`.
 - Dedicated setup guide: [docs/AUTHENTICATION_SETUP.md](docs/AUTHENTICATION_SETUP.md).
 
-Authentication is wired but remains disabled until a **separate CHECKMATE Firebase project** is configured. No AgriSence credentials or databases are used.
+### Real-time multiplayer MVP
+- Socket.IO server with Firebase Admin ID-token verification.
+- Time-control matchmaking and private invitation codes.
+- Server-authoritative chess move validation, FEN/PGN snapshots, and clocks.
+- Draw offers, draw acceptance, resignation, and a 60-second disconnect grace period.
+- Dedicated setup and protocol guide: [docs/REALTIME_SERVER.md](docs/REALTIME_SERVER.md).
+
+Authentication and realtime server code are wired but remain unavailable until a **separate CHECKMATE Firebase project** and server-side credentials are configured. No AgriSence credentials or databases are used. The multiplayer MVP currently stores active games and queues in server memory; it is not yet horizontally scalable or durable.
 
 ## Run locally
 
@@ -32,6 +39,12 @@ npm install
 cp .env.example .env
 # Add the CHECKMATE Firebase Web App values to .env
 npm run dev
+```
+
+Run the frontend and realtime server together:
+
+```bash
+npm run dev:all
 ```
 
 ## Production build
