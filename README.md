@@ -29,6 +29,7 @@
 - Server-authoritative chess move validation, FEN/PGN snapshots, clocks, increments, and timeout decisions.
 - Draw offers, draw acceptance, resignation, private invite codes, and a 60-second reconnect grace period.
 - Verified-email gate for online play.
+- Opt-in, two-player-only WebRTC voice/video calls; media is off until the player starts a call, and no recording is implemented.
 - Completed games are saved to Firestore; only the two participants can read each record.
 - Dedicated setup and protocol guide: [docs/REALTIME_SERVER.md](docs/REALTIME_SERVER.md).
 
