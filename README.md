@@ -8,7 +8,9 @@
 - React + TypeScript + Vite.
 - Graphite/jade dark theme and matching light appearance.
 - Interactive local chessboard powered by `chess.js`.
-- Legal move highlighting, move history, undo, restart, and board flip.
+- Legal move highlighting, selectable pawn promotion, move history, undo, restart, and board flip.
+- Five selectable time controls with active player clocks and increment support.
+- Ten board palettes and ten independently selectable piece appearances, including marble.
 - Responsive navigation and mobile layout.
 
 ### Account foundation
@@ -45,7 +47,7 @@ GitHub Actions runs the TypeScript/Vite production build on pushes and pull requ
 
 1. Foundation, CI, and independent authentication.
 2. Player profiles, settings, onboarding, and account security.
-3. Complete local chess experience, clocks, notation, and game controls.
+3. Complete local chess experience, clocks, promotion, and board customization.
 4. Real-time multiplayer game sessions and matchmaking.
 5. Friends, messaging, and private player-to-player voice/video.
 6. Ratings, game history, leaderboards, and tournaments.
