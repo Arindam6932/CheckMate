@@ -8,6 +8,7 @@
 - React + TypeScript + Vite.
 - Graphite/jade dark theme and matching light appearance.
 - Interactive local chessboard powered by `chess.js`.
+- Local computer opponent with three lightweight alpha-beta search levels (not Stockfish).
 - Legal move highlighting, selectable pawn promotion, move history, undo, restart, and board flip.
 - Five selectable time controls with active player clocks and increment support.
 - Ten board palettes and ten independently selectable piece appearances, including marble.
