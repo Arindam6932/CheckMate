@@ -30,7 +30,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [pieceSet, setPieceSet] = useState(() => readPreference('checkmate.pieceSet', 'classic'));
   const [soundEnabled, setSoundEnabled] = useState(() => readPreference('checkmate.sound', 'true') === 'true');
   const [animationsEnabled, setAnimationsEnabled] = useState(() => readPreference('checkmate.animations', 'true') === 'true');
-  const [systemDark, setSystemDark] = useState(() => window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? true);
+  const [systemDark, setSystemDark] = useState(() => window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? true);
 
   useEffect(() => {
     try {
