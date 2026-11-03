@@ -73,7 +73,7 @@ export default function GameHistoryPage() {
           const result = resultLabel(record);
           return <button className="history-item" key={record.gameId} onClick={()=>{setSelected(record);setCopied(false);}}>
             <span className={`history-result ${result.toLowerCase()}`}>{result}</span>
-            <div className="history-match"><b>{myColor} vs {opponent.slice(0,8)}…</b><span>{record.timeControl} · {record.moveCount} plies · {record.reason.replaceAll('-', ' ')}</span></div>
+            <div className="history-match"><b>{myColor} vs {opponent.slice(0,8)}…</b><span>{record.timeControl} · {record.moveCount} plies · {record.reason.replace(/-/g, ' ')}</span></div>
             <time>{record.finishedAt?.toDate().toLocaleDateString() || 'Recently'}</time>
             <span className="history-open">View PGN →</span>
           </button>;
