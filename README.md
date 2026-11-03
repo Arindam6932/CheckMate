@@ -14,7 +14,8 @@
 - Ten board palettes and ten independently selectable piece styles, including marble.
 - Interactive mate-in-one tactics trainer at `/puzzles`.
 - Ten replayable opening lines and fundamentals lessons at `/learn`.
-- Settings at `/settings`.
+- Settings at `/settings`, with account-synced preferences in Firestore and custom background uploads in Firebase Storage.
+- Automatic queen promotion and high-contrast board accessibility settings.
 
 ### Accounts and social
 - Firebase email/password registration and sign-in, email verification, Google sign-in, and password reset.
@@ -35,7 +36,7 @@
 
 ## Known MVP limitations
 
-- Authentication and online play require a dedicated CHECKMATE Firebase project and server-side Firebase Admin credentials. AgriSence credentials and databases are never reused.
+- Authentication, account-synced settings, and online play require a dedicated CHECKMATE Firebase project. Custom backgrounds additionally require the project's Firebase Storage bucket and deployed Storage rules. Online play requires server-side Firebase Admin credentials. AgriSence credentials and databases are never reused.
 - Active online games and matchmaking queues are held in server memory; server restarts lose in-progress games.
 - Tournament capacity is informational; hard caps, pairings, standings, automated rounds, and result adjudication are not implemented yet.
 - The Elo model is provisional; no Glicko-2, anti-cheat review, seasonal resets, or rated/casual split yet. All online matches currently affect ratings.
