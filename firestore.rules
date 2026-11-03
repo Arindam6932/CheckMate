@@ -136,6 +136,11 @@ service cloud.firestore {
         && request.resource.data.name is string
         && request.resource.data.name.size() >= 3
         && request.resource.data.name.size() <= 60
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 300
+        && request.resource.data.format in ['Arena', 'Swiss', 'Round robin', 'Knockout']
+        && request.resource.data.timeControl in ['3+0', '5+0', '10+0', '15+10', '30+0']
+        && request.resource.data.startsAt is timestamp
         && request.resource.data.capacity is int
         && request.resource.data.capacity >= 2
         && request.resource.data.capacity <= 256
@@ -146,6 +151,16 @@ service cloud.firestore {
       allow update: if signedIn()
         && resource.data.createdBy == request.auth.uid
         && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 3
+        && request.resource.data.name.size() <= 60
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 300
+        && request.resource.data.format in ['Arena', 'Swiss', 'Round robin', 'Knockout']
+        && request.resource.data.timeControl in ['3+0', '5+0', '10+0', '15+10', '30+0']
+        && request.resource.data.capacity is int
+        && request.resource.data.capacity >= 2
+        && request.resource.data.capacity <= 256
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'name', 'description', 'format', 'timeControl', 'capacity', 'startsAt', 'status'
         ]);
