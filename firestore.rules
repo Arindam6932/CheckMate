@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function ownsPlayer(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    match /players/{uid} {
+      allow read: if ownsPlayer(uid);
+      allow create: if ownsPlayer(uid)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'uid', 'displayName', 'email', 'photoURL', 'emailVerified',
+          'createdAt', 'updatedAt', 'profileVersion'
+        ]);
+      allow update: if ownsPlayer(uid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'displayName', 'photoURL', 'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
