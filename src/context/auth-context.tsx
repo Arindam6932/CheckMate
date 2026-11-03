@@ -27,7 +27,8 @@ async function savePlayerProfile(user: User, displayName?: string) {
   if (!db) throw unavailable();
   const profileRef = doc(db, 'players', user.uid);
   const existing = await getDoc(profileRef);
-  const profileName = displayName || user.displayName || 'Player';
+  const rawName = (displayName || user.displayName || user.email?.split('@')[0] || 'Player').trim();
+  const profileName = rawName.length >= 2 ? rawName.slice(0, 30) : 'Player';
   if (existing.exists()) {
     await updateDoc(profileRef, {
       displayName: profileName,
