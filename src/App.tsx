@@ -35,14 +35,14 @@ const formatClock = (seconds: number) => `${Math.floor(seconds / 60).toString().
 export default function App() {
   const navigate = useNavigate();
   const { user, logOut } = useAuth();
-  const { isDark, setAppearance, boardTheme, setBoardTheme, pieceSet, setPieceSet } = usePreferences();
+  const { isDark, setAppearance, boardTheme, setBoardTheme, pieceSet, setPieceSet, boardOrientation, setBoardOrientation, showMoveList } = usePreferences();
   const [game, setGame] = useState(initialGame);
   const [selected, setSelected] = useState<Square | null>(null);
   const [legal, setLegal] = useState<Square[]>([]);
-  const [flipped, setFlipped] = useState(false);
+  const [flipped, setFlipped] = useState(boardOrientation === 'black');
   const [activeNav, setActiveNav] = useState('Play');
   const [showProfile, setShowProfile] = useState(false);
-  const [showMoves, setShowMoves] = useState(true);
+  const [showMoves, setShowMoves] = useState(showMoveList);
   const [notice, setNotice] = useState('Your board is ready. Make the first move.');
   const [timeControl, setTimeControl] = useState('10+0');
   const [whiteTime, setWhiteTime] = useState(600);
@@ -252,7 +252,7 @@ export default function App() {
             {promotionRequest && <div className="promotion-panel"><strong>Choose promotion</strong><div>{(['q','r','b','n'] as const).map(piece => <button key={piece} onClick={() => completePromotion(piece)} aria-label={`Promote to ${piece}`}><span className={promotionRequest.color === 'w' ? 'white-piece' : 'black-piece'}>{glyph[promotionRequest.color + piece]}</span></button>)}</div><button className="promotion-cancel" onClick={() => setPromotionRequest(null)}>Cancel</button></div>}
             <div className="board-controls">
               <div className="turn-indicator"><span className={game.turn() === 'w' ? 'turn-piece white-turn' : 'turn-piece black-turn'}>{game.turn() === 'w' ? '♙' : '♟'}</span><div><b>{status}</b><small>{notice}</small></div></div>
-              <div className="control-buttons"><button onClick={undoMove} disabled={!game.history().length} title="Undo"><ArrowLeft size={17}/></button><button onClick={() => setFlipped(!flipped)} title="Flip board"><ArrowDownUp size={17}/></button><button onClick={resetGame} title="Restart"><History size={17}/></button><button onClick={() => navigate('/settings')} title="Sound"><Volume2 size={17}/></button></div>
+              <div className="control-buttons"><button onClick={undoMove} disabled={!game.history().length} title="Undo"><ArrowLeft size={17}/></button><button onClick={() => { const next = !flipped; setFlipped(next); setBoardOrientation(next ? 'black' : 'white'); }} title="Flip board"><ArrowDownUp size={17}/></button><button onClick={resetGame} title="Restart"><History size={17}/></button><button onClick={() => navigate('/settings')} title="Sound"><Volume2 size={17}/></button></div>
             </div>
             <div className="board-customization">
               <label>BOARD STYLE<select value={boardTheme} onChange={e => setBoardTheme(e.target.value)}>
