@@ -103,6 +103,7 @@ io.use(async (socket, next) => {
   if (typeof token !== 'string' || !token) return next(new Error('Authentication required.'));
   try {
     const decoded = await firebaseAuth.verifyIdToken(token);
+    if (decoded.email_verified !== true) return next(new Error('Verify your email address before playing online.'));
     socket.data.uid = decoded.uid;
     next();
   } catch {
