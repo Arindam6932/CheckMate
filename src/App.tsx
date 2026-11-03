@@ -21,6 +21,11 @@ const glyph: Record<string, string> = {
   bk: '♚', bq: '♛', br: '♜', bb: '♝', bn: '♞', bp: '♟',
 };
 const initialGame = () => new Chess();
+const cloneGame = (source: Chess) => {
+  const copy = new Chess();
+  if (source.history().length) copy.loadPgn(source.pgn());
+  return copy;
+};
 const formatClock = (seconds: number) => `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
 
 export default function App() {
@@ -82,7 +87,7 @@ export default function App() {
         setSelected(null); setLegal([]);
         return;
       }
-      const next = new Chess(game.fen());
+      const next = cloneGame(game);
       try {
         const movingSide = game.turn();
         next.move({ from: selected, to: square });
@@ -127,8 +132,7 @@ export default function App() {
   }
   function undoMove() {
     if (!game.history().length) return;
-    const next = new Chess();
-    next.loadPgn(game.pgn());
+    const next = cloneGame(game);
     next.undo();
     setGame(next); setSelected(null); setLegal([]); setFlagged(null); setPromotionRequest(null);
     setNotice('Last move taken back.');
