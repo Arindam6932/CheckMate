@@ -26,6 +26,11 @@ function getEngine(): Promise<Worker> {
       engineReady = null;
       engineWorker = null;
       worker.terminate();
+      rejectMove?.(new Error('Stockfish worker crashed during search.'));
+      resolveMove = null;
+      rejectMove = null;
+      if (searchTimeout !== null) window.clearTimeout(searchTimeout);
+      searchTimeout = null;
       reject(new Error('Stockfish could not be loaded.'));
     };
 
