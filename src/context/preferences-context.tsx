@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 
 export type Appearance = 'dark' | 'light' | 'system';
-export type BackgroundStyle = 'aurora' | 'midnight' | 'forest' | 'plain';
+export type BackgroundStyle = 'aurora' | 'midnight' | 'forest' | 'plain' | 'custom';
 export type Density = 'comfortable' | 'compact';
 
 type PreferencesValue = {
@@ -20,6 +20,8 @@ type PreferencesValue = {
   boardOrientation: 'white' | 'black';
   showMoveList: boolean;
   backgroundStyle: BackgroundStyle;
+  customBackground: string;
+  setCustomBackground: (value: string) => void;
   accentColor: string;
   customBoardColors: boolean;
   boardLightColor: string;
@@ -55,7 +57,7 @@ const defaults = {
   soundEnabled: true, soundVolume: 65, animationsEnabled: true, animationSpeed: 100,
   showCoordinates: true, showLegalMoves: true, highlightLastMove: true,
   compactMode: false, boardOrientation: 'white' as const, showMoveList: true,
-  backgroundStyle: 'aurora' as BackgroundStyle, accentColor: '#75d6a1',
+  backgroundStyle: 'aurora' as BackgroundStyle, customBackground: '', accentColor: '#75d6a1',
   customBoardColors: false, boardLightColor: '#e9e8d9', boardDarkColor: '#56866c',
   pieceScale: 100, boardCorners: 9,
 };
@@ -88,8 +90,9 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [showMoveList, setShowMoveList] = useState(() => readBool('showMoveList', defaults.showMoveList));
   const [backgroundStyle, setBackgroundStyle] = useState<BackgroundStyle>(() => {
     const value = readPreference('backgroundStyle', defaults.backgroundStyle);
-    return ['aurora','midnight','forest','plain'].includes(value) ? value as BackgroundStyle : defaults.backgroundStyle;
+    return ['aurora','midnight','forest','plain','custom'].includes(value) ? value as BackgroundStyle : defaults.backgroundStyle;
   });
+  const [customBackground, setCustomBackground] = useState(() => readPreference('customBackground', defaults.customBackground));
   const [accentColor, setAccentColor] = useState(() => readPreference('accentColor', defaults.accentColor));
   const [customBoardColors, setCustomBoardColors] = useState(() => readBool('customBoardColors', defaults.customBoardColors));
   const [boardLightColor, setBoardLightColor] = useState(() => readPreference('boardLightColor', defaults.boardLightColor));
@@ -104,13 +107,13 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       animations: String(animationsEnabled), animationSpeed: String(animationSpeed),
       coordinates: String(showCoordinates), legalMoves: String(showLegalMoves), lastMove: String(highlightLastMove),
       compactMode: String(compactMode), boardOrientation, showMoveList: String(showMoveList),
-      backgroundStyle, accentColor, customBoardColors: String(customBoardColors),
+      backgroundStyle, customBackground, accentColor, customBoardColors: String(customBoardColors),
       boardLightColor, boardDarkColor, pieceScale: String(pieceScale), boardCorners: String(boardCorners),
     };
     try { Object.entries(values).forEach(([key, value]) => window.localStorage.setItem('checkmate.' + key, value)); }
     catch { /* Preferences remain available for this session if storage is unavailable. */ }
   }, [appearance, boardTheme, pieceSet, soundEnabled, soundVolume, animationsEnabled, animationSpeed,
-    showCoordinates, showLegalMoves, highlightLastMove, compactMode, boardOrientation, showMoveList, backgroundStyle, accentColor,
+    showCoordinates, showLegalMoves, highlightLastMove, compactMode, boardOrientation, showMoveList, backgroundStyle, customBackground, accentColor,
     customBoardColors, boardLightColor, boardDarkColor, pieceScale, boardCorners]);
 
   useEffect(() => {
@@ -128,7 +131,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     setShowCoordinates(defaults.showCoordinates); setShowLegalMoves(defaults.showLegalMoves);
     setHighlightLastMove(defaults.highlightLastMove); setCompactMode(defaults.compactMode);
     setBoardOrientation(defaults.boardOrientation); setShowMoveList(defaults.showMoveList);
-    setBackgroundStyle(defaults.backgroundStyle); setAccentColor(defaults.accentColor);
+    setBackgroundStyle(defaults.backgroundStyle); setCustomBackground(defaults.customBackground); setAccentColor(defaults.accentColor);
     setCustomBoardColors(defaults.customBoardColors); setBoardLightColor(defaults.boardLightColor);
     setBoardDarkColor(defaults.boardDarkColor); setPieceScale(defaults.pieceScale); setBoardCorners(defaults.boardCorners);
   };
@@ -136,20 +139,21 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const value = useMemo(() => ({
     appearance, isDark: appearance === 'dark' || (appearance === 'system' && systemDark),
     boardTheme, pieceSet, soundEnabled, soundVolume, animationsEnabled, animationSpeed,
-    showCoordinates, showLegalMoves, highlightLastMove, compactMode, boardOrientation, showMoveList, backgroundStyle, accentColor,
+    showCoordinates, showLegalMoves, highlightLastMove, compactMode, boardOrientation, showMoveList, backgroundStyle, customBackground, accentColor,
     customBoardColors, boardLightColor, boardDarkColor, pieceScale, boardCorners,
     setAppearance, setBoardTheme, setPieceSet, setSoundEnabled, setSoundVolume, setAnimationsEnabled,
     setAnimationSpeed, setShowCoordinates, setShowLegalMoves, setHighlightLastMove, setCompactMode,
-    setBoardOrientation, setShowMoveList, setBackgroundStyle, setAccentColor, setCustomBoardColors, setBoardLightColor, setBoardDarkColor,
+    setBoardOrientation, setShowMoveList, setBackgroundStyle, setCustomBackground, setAccentColor, setCustomBoardColors, setBoardLightColor, setBoardDarkColor,
     setPieceScale, setBoardCorners, resetPreferences,
   }), [appearance, systemDark, boardTheme, pieceSet, soundEnabled, soundVolume, animationsEnabled,
     animationSpeed, showCoordinates, showLegalMoves, highlightLastMove, compactMode, boardOrientation, showMoveList, backgroundStyle,
-    accentColor, customBoardColors, boardLightColor, boardDarkColor, pieceScale, boardCorners]);
+    accentColor, customBackground, customBoardColors, boardLightColor, boardDarkColor, pieceScale, boardCorners]);
 
   const style = {
     '--user-accent': accentColor, '--board-light': boardLightColor, '--board-dark': boardDarkColor,
     '--piece-scale': pieceScale / 100, '--board-radius': boardCorners + 'px',
     '--animation-duration': animationSpeed * 1.8 + 'ms',
+    '--custom-background-image': customBackground ? `url(${JSON.stringify(customBackground)})` : 'none',
   } as CSSProperties & Record<`--${string}`, string | number>;
 
   return <PreferencesContext.Provider value={value}>
