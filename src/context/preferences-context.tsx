@@ -73,11 +73,14 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     const refDoc = settingsRef(uid);
     return onSnapshot(refDoc, snapshot => {
       const data = snapshot.data() || {};
-      setPrefs({
+      const nextPrefs = {
         ...defaults,
         ...data,
         customBackground: typeof data.customBackgroundUrl === 'string' ? data.customBackgroundUrl : '',
-      } as PreferenceState);
+      } as PreferenceState;
+      setPrefs(current => Object.keys(defaults).every(key =>
+        current[key as keyof PreferenceState] === nextPrefs[key as keyof PreferenceState]
+      ) ? current : nextPrefs);
       setBackgroundPath(typeof data.customBackgroundPath === 'string' ? data.customBackgroundPath : '');
       setLoadedUid(uid);
       setSyncStatus('synced');
@@ -117,6 +120,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function uploadCustomBackground(file: File) {
+    setSyncStatus('saving');
     const user = auth?.currentUser;
     if (!user || !storage || !db) throw new Error('Sign in to upload and sync a background image.');
     if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) throw new Error('Choose a JPG, PNG or WebP image.');
@@ -140,6 +144,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   }
 
   async function removeCustomBackground() {
+    setSyncStatus('saving');
     const user = auth?.currentUser;
     if (!user || !storage || !db) throw new Error('Sign in to manage your background image.');
     const oldPath = backgroundPath;
