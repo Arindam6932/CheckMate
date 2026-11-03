@@ -183,3 +183,14 @@
 .theme-root-frame .settings-board-preview{border-radius:var(--board-radius,9px)}
 .theme-root-frame .studio-live-board{border-radius:var(--board-radius,9px)}
 @media(max-width:520px){.theme-root-frame.compact-mode .page-wrap{padding:18px 12px 12px}}
+
+
+/* Layout-safe coordinate toggle and fine-grained animation timing */
+.theme-root-frame.hide-coordinates .board-frame,
+.theme-root-frame.hide-coordinates .puzzle-board-frame,
+.theme-root-frame.hide-coordinates .opening-board-frame{grid-template-columns:minmax(0,1fr)!important}
+.theme-root-frame .chessboard .piece,
+.theme-root-frame .chessboard .square{transition-duration:var(--animation-duration,180ms)}
+.theme-root-frame .app-shell{--accent:var(--user-accent);--accent-strong:var(--user-accent)}
+.theme-root-frame .theme-toggle:focus-visible,
+.theme-root-frame button:focus-visible{outline-color:var(--user-accent)}
