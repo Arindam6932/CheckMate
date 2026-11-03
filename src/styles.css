@@ -221,3 +221,26 @@
 .theme-root-frame .settings-title-icon,.theme-root-frame .studio-choice.active,.theme-root-frame .studio-toggle-icon{color:var(--user-accent)}
 .theme-root-frame .online-eyebrow,.theme-root-frame .eyebrow{color:var(--user-accent)}
 .theme-root-frame .play-card.featured .play-icon{color:var(--user-accent)}
+
+
+/* Light appearance keeps readable surfaces with every background preset */
+.theme-root-frame.light.background-midnight .app-shell,
+.theme-root-frame.light.background-midnight .settings-screen,
+.theme-root-frame.light.background-midnight .puzzles-screen,
+.theme-root-frame.light.background-midnight .learn-screen,
+.theme-root-frame.light.background-midnight .tournaments-screen,
+.theme-root-frame.light.background-midnight .community-screen,
+.theme-root-frame.light.background-midnight .leaderboard-screen,
+.theme-root-frame.light.background-midnight .online-screen,
+.theme-root-frame.light.background-midnight .auth-screen,
+.theme-root-frame.light.background-midnight .profile-screen{background:radial-gradient(ellipse at 70% 0,#dce8f0 0,transparent 45%),#f4f7f2}
+.theme-root-frame.light.background-forest .app-shell,
+.theme-root-frame.light.background-forest .settings-screen,
+.theme-root-frame.light.background-forest .puzzles-screen,
+.theme-root-frame.light.background-forest .learn-screen,
+.theme-root-frame.light.background-forest .tournaments-screen,
+.theme-root-frame.light.background-forest .community-screen,
+.theme-root-frame.light.background-forest .leaderboard-screen,
+.theme-root-frame.light.background-forest .online-screen,
+.theme-root-frame.light.background-forest .auth-screen,
+.theme-root-frame.light.background-forest .profile-screen{background:radial-gradient(ellipse at 25% 0,#d7eadb 0,transparent 46%),#f4f7f2}
