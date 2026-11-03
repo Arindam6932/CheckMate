@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from './context/auth-context';
 import { Chess, type Square } from 'chess.js';
 import {
   Activity, ArrowDownUp, ArrowLeft, ArrowRight, Bell, BookOpen, ChevronDown,
@@ -21,6 +23,8 @@ const glyph: Record<string, string> = {
 const initialGame = () => new Chess();
 
 export default function App() {
+  const navigate = useNavigate();
+  const { user, logOut } = useAuth();
   const [game, setGame] = useState(initialGame);
   const [selected, setSelected] = useState<Square | null>(null);
   const [legal, setLegal] = useState<Square[]>([]);
@@ -98,11 +102,11 @@ export default function App() {
         <div className="top-actions">
           <button className="icon-button" aria-label="Search"><Search size={18}/></button>
           <button className="icon-button notification" aria-label="Notifications"><Bell size={18}/><i/></button>
-          <button className="avatar-button" onClick={() => setShowProfile(!showProfile)} aria-label="Open profile menu">A<ChevronDown size={13}/></button>
+          <button className="avatar-button" onClick={() => setShowProfile(!showProfile)} aria-label="Open profile menu">{user?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "A"}<ChevronDown size={13}/></button>
           {showProfile && <div className="profile-menu">
-            <div className="profile-heading"><div className="avatar large">A</div><div><strong>Guest Player</strong><span>Sign in to save progress</span></div></div>
+            <div className="profile-heading"><div className="avatar large">{user?.displayName?.charAt(0).toUpperCase() || "A"}</div><div><strong>{user?.displayName || "Guest Player"}</strong><span>{user?.email || "Sign in to save progress"}</span></div></div>
             {['Your profile','Game history','Statistics & ratings','Settings','Help & support'].map((label, i) => <button key={label} onClick={() => { setNotice(label + ' will be available after account setup.'); setShowProfile(false); }}><span>{[<Users/>,<History/>,<Activity/>,<Settings/>,<CircleHelp/>][i]}</span>{label}</button>)}
-            <button className="profile-signin" onClick={() => { setNotice('Authentication will be connected in the account phase.'); setShowProfile(false); }}>Sign in / Create account <ArrowRight size={14}/></button>
+            <button className="profile-signin" onClick={() => { setShowProfile(false); if (user) { void logOut().then(() => setNotice("Signed out successfully.")).catch(() => setNotice("Could not sign out. Please retry.")); } else { navigate("/auth?mode=login"); } }}>{user ? "Sign out" : "Sign in / Create account"} <ArrowRight size={14}/></button>
           </div>}
         </div>
       </header>
