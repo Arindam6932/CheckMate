@@ -196,9 +196,10 @@ service cloud.firestore {
         && request.resource.data.capacity is int
         && request.resource.data.capacity >= 2
         && request.resource.data.capacity <= 256
+        && request.resource.data.participantCount == 0
         && request.resource.data.keys().hasOnly([
           'name', 'description', 'format', 'timeControl', 'capacity',
-          'startsAt', 'status', 'createdBy', 'createdAt'
+          'startsAt', 'status', 'createdBy', 'createdAt', 'participantCount'
         ]);
       allow update: if signedIn()
         && resource.data.createdBy == request.auth.uid
