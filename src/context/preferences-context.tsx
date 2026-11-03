@@ -127,6 +127,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     setAnimationsEnabled(defaults.animationsEnabled); setAnimationSpeed(defaults.animationSpeed);
     setShowCoordinates(defaults.showCoordinates); setShowLegalMoves(defaults.showLegalMoves);
     setHighlightLastMove(defaults.highlightLastMove); setCompactMode(defaults.compactMode);
+    setBoardOrientation(defaults.boardOrientation); setShowMoveList(defaults.showMoveList);
     setBackgroundStyle(defaults.backgroundStyle); setAccentColor(defaults.accentColor);
     setCustomBoardColors(defaults.customBoardColors); setBoardLightColor(defaults.boardLightColor);
     setBoardDarkColor(defaults.boardDarkColor); setPieceScale(defaults.pieceScale); setBoardCorners(defaults.boardCorners);
@@ -135,14 +136,14 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const value = useMemo(() => ({
     appearance, isDark: appearance === 'dark' || (appearance === 'system' && systemDark),
     boardTheme, pieceSet, soundEnabled, soundVolume, animationsEnabled, animationSpeed,
-    showCoordinates, showLegalMoves, highlightLastMove, compactMode, backgroundStyle, accentColor,
+    showCoordinates, showLegalMoves, highlightLastMove, compactMode, boardOrientation, showMoveList, backgroundStyle, accentColor,
     customBoardColors, boardLightColor, boardDarkColor, pieceScale, boardCorners,
     setAppearance, setBoardTheme, setPieceSet, setSoundEnabled, setSoundVolume, setAnimationsEnabled,
     setAnimationSpeed, setShowCoordinates, setShowLegalMoves, setHighlightLastMove, setCompactMode,
-    setBackgroundStyle, setAccentColor, setCustomBoardColors, setBoardLightColor, setBoardDarkColor,
+    setBoardOrientation, setShowMoveList, setBackgroundStyle, setAccentColor, setCustomBoardColors, setBoardLightColor, setBoardDarkColor,
     setPieceScale, setBoardCorners, resetPreferences,
   }), [appearance, systemDark, boardTheme, pieceSet, soundEnabled, soundVolume, animationsEnabled,
-    animationSpeed, showCoordinates, showLegalMoves, highlightLastMove, compactMode, backgroundStyle,
+    animationSpeed, showCoordinates, showLegalMoves, highlightLastMove, compactMode, boardOrientation, showMoveList, backgroundStyle,
     accentColor, customBoardColors, boardLightColor, boardDarkColor, pieceScale, boardCorners]);
 
   const style = {
