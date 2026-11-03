@@ -5,9 +5,11 @@ import { AuthProvider } from './context/auth-context';
 import App from './App';
 import AuthPage from './pages/auth-page';
 import ProfilePage from './pages/profile-page';
+import OnlinePlayPage from './pages/online-play-page';
 import './styles.css';
 import './pages/auth-page.css';
 import './pages/profile-page.css';
+import './pages/online-play-page.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -17,6 +19,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Route path="/" element={<App />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/play-online" element={<OnlinePlayPage />} />
           <Route path="*" element={<App />} />
         </Routes>
       </AuthProvider>
