@@ -34,6 +34,8 @@ export default function App() {
   const [showMoves, setShowMoves] = useState(true);
   const [notice, setNotice] = useState('Your board is ready. Make the first move.');
   const [darkMode, setDarkMode] = useState(true);
+  const [boardTheme, setBoardTheme] = useState('classic');
+  const [pieceSet, setPieceSet] = useState('classic');
 
   const board = useMemo(() => {
     const rows = game.board();
@@ -122,7 +124,7 @@ export default function App() {
             <div className="board-topline"><div className="opponent"><div className="opponent-avatar">♟</div><div><strong>Practice board</strong><span>Local game · No opponent connected</span></div></div><button className="subtle-icon" onClick={() => setNotice('Game options will be expanded in the next build phase.')}><MoreHorizontal size={20}/></button></div>
             <div className="board-frame">
               <div className="board-coordinates left">{ranks.map(n => <span key={n}>{n}</span>)}</div>
-              <div className="chessboard classic">
+              <div className={`chessboard board-${boardTheme} piece-set-${pieceSet}`}>
                 {board.map((row, r) => row.map((piece, c) => {
                   const square = (files[c] + ranks[r]) as Square;
                   const isLight = (r + c) % 2 === 0;
@@ -142,6 +144,14 @@ export default function App() {
             <div className="board-controls">
               <div className="turn-indicator"><span className={game.turn() === 'w' ? 'turn-piece white-turn' : 'turn-piece black-turn'}>{game.turn() === 'w' ? '♙' : '♟'}</span><div><b>{status}</b><small>{notice}</small></div></div>
               <div className="control-buttons"><button onClick={undoMove} disabled={!game.history().length} title="Undo"><ArrowLeft size={17}/></button><button onClick={() => setFlipped(!flipped)} title="Flip board"><ArrowDownUp size={17}/></button><button onClick={resetGame} title="Restart"><History size={17}/></button><button onClick={() => setNotice('Sound controls will be available with the settings system.')} title="Sound"><Volume2 size={17}/></button></div>
+            </div>
+            <div className="board-customization">
+              <label>BOARD STYLE<select value={boardTheme} onChange={e => setBoardTheme(e.target.value)}>
+                <option value="classic">Classic</option><option value="walnut">Walnut</option><option value="marble">Carrara marble</option><option value="emerald">Emerald</option><option value="slate">Slate</option><option value="sakura">Sakura</option><option value="ocean">Ocean</option><option value="neon">Neon</option><option value="ivory">Ivory</option><option value="carbon">Carbon</option>
+              </select></label>
+              <label>PIECE SET<select value={pieceSet} onChange={e => setPieceSet(e.target.value)}>
+                <option value="classic">Classic</option><option value="minimal">Minimal</option><option value="royal">Royal gold</option><option value="outline">Outline</option><option value="neon">Neon</option><option value="marble">Marble</option><option value="mono">Monochrome</option><option value="wood">Wood</option><option value="glass">Glass</option><option value="fantasy">Fantasy</option>
+              </select></label>
             </div>
           </div>
 
