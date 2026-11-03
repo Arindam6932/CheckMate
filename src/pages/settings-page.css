@@ -106,3 +106,10 @@
 .light .studio-footer-actions button{background:#fbefef;border-color:#e5c5c5;color:#a34d4d}
 @media(max-width:700px){.studio-presets{grid-template-columns:repeat(3,minmax(0,1fr))}.board-theme-grid,.piece-set-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.background-options{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:480px){.studio-settings .settings-content{margin:25px auto}.studio-card{padding:13px}.studio-heading{align-items:flex-start;flex-direction:column}.studio-heading small{text-align:left}.studio-presets{grid-template-columns:repeat(2,minmax(0,1fr))}.studio-footer-actions{align-items:flex-start;flex-direction:column}.studio-footer-actions button{align-self:flex-end}.board-colour-editors{flex-wrap:wrap}.board-colour-editors>button{margin-left:0}}
+
+
+.orientation-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 8px}
+.orientation-options button{padding:10px;border:1px solid #2f473a;border-radius:8px;background:#1a2922;color:#a9b9ae;font-size:9px}
+.orientation-options button.active{border-color:var(--user-accent);background:#1e3b2b;color:#b9f0cd}
+.light .orientation-options button{background:#f2f6f1;border-color:#dce7dc;color:#52685a}
+.light .orientation-options button.active{background:#e4f5e8;border-color:#258a57;color:#176a40}
