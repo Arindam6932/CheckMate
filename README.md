@@ -35,6 +35,7 @@
 - Server-authoritative chess move validation, FEN/PGN snapshots, clocks, increments, and timeout decisions.
 - Draw offers, draw acceptance, resignation, private invite codes, and a 60-second reconnect grace period.
 - Verified-email gate for online play.
+- Provisional Elo ratings (K=32), game statistics, and rapid/blitz/classical leaderboards.
 - Opt-in, two-player-only WebRTC voice/video calls; media is off until the player starts a call, and no recording is implemented.
 - Completed games are saved to Firestore; only the two participants can read each record.
 - Friend requests, friendships, conversations, and messages are protected by Firestore membership rules.
