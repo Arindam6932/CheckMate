@@ -61,6 +61,7 @@ async function savePlayerProfile(user: User, displayName?: string) {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [userRevision, setUserRevision] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -108,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         displayName: cleanName,
         updatedAt: serverTimestamp(),
       });
-      setUser({ ...auth.currentUser, displayName: cleanName } as User);
+      setUserRevision(value => value + 1);
     },
     async resendVerification() {
       if (!auth?.currentUser) throw unavailable();
@@ -119,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!auth) throw unavailable();
       await signOut(auth);
     },
-  }), [user, loading]);
+  }), [user, loading, userRevision]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
