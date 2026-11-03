@@ -29,6 +29,7 @@ export default function OnlinePlayPage() {
   const [busy, setBusy] = useState(false);
   const [clocks, setClocks] = useState({ white: 600_000, black: 600_000 });
   const [paused, setPaused] = useState(false);
+  const [drawOffered, setDrawOffered] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate('/auth?mode=login', { replace: true });
@@ -55,12 +56,12 @@ export default function OnlinePlayPage() {
         setGame(next); setSelected(null); setLegal([]); setPaused(Boolean(data.paused)); setClocks({ white: data.whiteTimeMs, black: data.blackTimeMs });
         setStatus(data.checkmate ? 'Checkmate — game finished.' : data.draw ? 'Draw — game finished.' : data.check ? 'Check.' : 'Game in progress.');
       });
-      socket.on('game:ended', (data: { result: string; reason: string; whiteTimeMs?: number; blackTimeMs?: number }) => { setPaused(true); if (data.whiteTimeMs !== undefined && data.blackTimeMs !== undefined) setClocks({ white: data.whiteTimeMs, black: data.blackTimeMs }); setStatus(data.result === 'draw' ? 'Draw agreed.' : `Game ended: ${data.reason}.`); });
-      socket.on('game:draw-offered', () => setStatus('Your opponent offered a draw.'));
-      socket.on('game:draw-declined', () => setStatus('Draw offer declined.'));
+      socket.on('game:ended', (data: { result: string; reason: string; whiteTimeMs?: number; blackTimeMs?: number }) => { setPaused(true); setDrawOffered(false); if (data.whiteTimeMs !== undefined && data.blackTimeMs !== undefined) setClocks({ white: data.whiteTimeMs, black: data.blackTimeMs }); setStatus(data.result === 'draw' ? 'Draw agreed.' : `Game ended: ${data.reason}.`); });
+      socket.on('game:draw-offered', () => { setDrawOffered(true); setStatus('Your opponent offered a draw.'); });
+      socket.on('game:draw-declined', () => { setDrawOffered(false); setStatus('Draw offer declined.'); });
       socket.on('game:opponent-disconnected', () => { setPaused(true); setStatus('Your opponent disconnected. Clocks paused for 60 seconds.'); });
       socket.on('game:opponent-reconnected', () => { setPaused(false); setStatus('Your opponent reconnected. Game resumed.'); });
-      socket.on('game:error', (data: { message: string }) => setStatus(data.message));
+      socket.on('game:error', (data: { message: string }) => { setBusy(false); setStatus(data.message); });
       socket.on('private:created', (data: { code: string }) => { setInviteCode(data.code); setStatus('Private invitation created. Share the code with your opponent.'); });
     }).catch(error => { if (active) setStatus(error instanceof Error ? error.message : 'Could not connect to the game server.'); });
     return () => { active = false; socketRef.current?.disconnect(); socketRef.current = null; };
@@ -134,7 +135,7 @@ export default function OnlinePlayPage() {
           }))}
         </div><div className="online-coords">{ranks.map(rank=><span key={rank}>{rank}</span>)}</div></div> : <div className="online-empty-board"><span>♞</span><b>Your next opponent is out there.</b><p>Find a rated or casual match, or invite a friend with a private code.</p></div>}
         <div className="online-game-status"><Radio size={15}/>{status}</div>
-        {match && <div className="online-game-actions"><button onClick={()=>socketRef.current?.emit('game:offer-draw',{gameId:match.gameId})}>Offer draw</button><button className="resign" onClick={()=>socketRef.current?.emit('game:resign',{gameId:match.gameId})}>Resign</button></div>}
+        {match && <div className="online-game-actions">{drawOffered ? <><button onClick={()=>{socketRef.current?.emit('game:accept-draw',{gameId:match.gameId});setDrawOffered(false);}}>Accept draw</button><button onClick={()=>{socketRef.current?.emit('game:decline-draw',{gameId:match.gameId});setDrawOffered(false);}}>Decline</button></> : <button onClick={()=>socketRef.current?.emit('game:offer-draw',{gameId:match.gameId})}>Offer draw</button>}<button className="resign" onClick={()=>socketRef.current?.emit('game:resign',{gameId:match.gameId})}>Resign</button></div>}
       </section>
       <aside className="online-side-panel">
         <div className="online-eyebrow">PLAY SOMEONE REAL</div><h1>Find your match.</h1><p>Fair, fast, and focused on the game.</p>
