@@ -27,12 +27,13 @@ The Vite app runs at `http://localhost:5173`; the realtime server runs at `http:
 - `game:resign`.
 - `game:reconnect`: rejoin an active game during a 60-second disconnect grace period.
 
-Every socket connection must present a Firebase ID token. The server verifies it with the Firebase Admin SDK. Only the two assigned player UIDs may act in a game room; spectator joining is not implemented.
+Every socket connection must present a Firebase ID token with a verified email claim. The server verifies it with the Firebase Admin SDK. Only the two assigned player UIDs may act in a game room; spectator joining is not implemented. The server owns move validation and clock accounting, including increments and timeout outcomes.
 
 ## Current MVP limitations
 
 - Matchmaking queues and game sessions are held in server memory. A server restart loses active sessions and queues.
 - Reconnection is supported only while the same server process retains the game room.
+- Private invite codes expire after ten minutes.
 - The 60-second disconnect grace period pauses the clocks. If no player reconnects before it expires, the disconnected side forfeits; if both disconnect, the game is recorded as a draw in the live event.
 - Game records are not yet persisted to Firestore.
 - Production deployment should add Redis-backed Socket.IO adapters/queues, durable game storage, observability, abuse throttling, and load testing before public launch.
