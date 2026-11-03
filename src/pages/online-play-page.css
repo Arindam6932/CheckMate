@@ -2,3 +2,32 @@
 
 .online-clock-pair{display:flex;gap:5px}.online-clock-pair span{padding:6px 7px;border-radius:6px;background:#0e1914;border:1px solid #31483a;color:#9eafa4;font-size:9px;font-variant-numeric:tabular-nums}.online-clock-pair .online-clock-active{background:#1c3829;border-color:#75d6a1;color:#b4f0c8}
 @media(max-width:480px){.online-player-row{gap:6px}.online-clock-pair{gap:3px}.online-clock-pair span{font-size:8px;padding:5px}}
+
+
+/* Board studio palettes and piece treatments are applied to the live online board. */
+.board-theme-walnut .online-board .online-light{background:#dfc29b}.board-theme-walnut .online-board .online-dark{background:#82583d}
+.board-theme-marble .online-board .online-light{background:#f4f3ee}.board-theme-marble .online-board .online-dark{background:#888e8a}
+.board-theme-emerald .online-board .online-light{background:#d9e8c9}.board-theme-emerald .online-board .online-dark{background:#327b58}
+.board-theme-slate .online-board .online-light{background:#cbd1d6}.board-theme-slate .online-board .online-dark{background:#596773}
+.board-theme-sakura .online-board .online-light{background:#f8e5e8}.board-theme-sakura .online-board .online-dark{background:#c78398}
+.board-theme-ocean .online-board .online-light{background:#d9eaf0}.board-theme-ocean .online-board .online-dark{background:#4e829a}
+.board-theme-neon .online-board .online-light{background:#c5e8dd}.board-theme-neon .online-board .online-dark{background:#273c58}
+.board-theme-ivory .online-board .online-light{background:#f0e8d4}.board-theme-ivory .online-board .online-dark{background:#b5a27b}
+.board-theme-carbon .online-board .online-light{background:#aeb4b0}.board-theme-carbon .online-board .online-dark{background:#454c49}
+.custom-board-colors .online-board .online-light{background:var(--board-light)}.custom-board-colors .online-board .online-dark{background:var(--board-dark)}
+.online-board{border-radius:var(--board-radius,8px)}
+.online-board .online-square>span{transform:scale(var(--piece-scale,1));transition:transform var(--animation-duration,180ms) ease}
+.motion-off .online-board .online-square>span{transition:none}
+.piece-set-minimal .online-board .online-square>span{filter:grayscale(1) drop-shadow(0 1px 1px #0004)}
+.piece-set-royal .online-board .online-white-piece{color:#f8e6b4;text-shadow:0 1px 2px #624b20,1px 0 1px #624b20,-1px 0 1px #624b20}
+.piece-set-royal .online-board .online-black-piece{color:#8d6a2f;text-shadow:0 1px 2px #f4e5bd}
+.piece-set-outline .online-board .online-square>span{filter:drop-shadow(0 0 2px currentColor)}
+.piece-set-neon .online-board .online-white-piece{color:#d9fff4;text-shadow:0 0 5px #00e5b0,0 0 12px #00e5b0}
+.piece-set-neon .online-board .online-black-piece{color:#162f54;text-shadow:0 0 5px #62a9ff,0 0 12px #62a9ff}
+.piece-set-marble .online-board .online-square>span{filter:grayscale(.6) brightness(1.12) drop-shadow(0 2px 2px #0005)}
+.piece-set-mono .online-board .online-square>span{filter:grayscale(1)}
+.piece-set-wood .online-board .online-white-piece{color:#f2d6a8;text-shadow:0 1px 2px #6c4727,1px 0 1px #6c4727}
+.piece-set-wood .online-board .online-black-piece{color:#6b4226;text-shadow:0 1px 2px #f1d5aa}
+.piece-set-glass .online-board .online-square>span{opacity:.88;filter:drop-shadow(0 0 4px #d8fff8)}
+.piece-set-fantasy .online-board .online-square>span{filter:drop-shadow(0 0 4px #d5a8ff)}
+.high-contrast .online-board .online-light{background:#fff!important}.high-contrast .online-board .online-dark{background:#263b31!important}
