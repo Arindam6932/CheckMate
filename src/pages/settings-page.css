@@ -176,3 +176,11 @@
 .light .settings-sync-banner b{color:#225d39}.light .settings-sync-banner small{color:#617668}
 .light .settings-sync-banner.sync-error{background:#fbefef;border-color:#e5c5c5}
 .light .settings-sync-banner.sync-error b{color:#9b4444}
+
+
+/* Accessibility contrast option */
+.theme-root-frame.high-contrast .chessboard .light-square{filter:brightness(1.12) saturate(.92);outline:1px solid #fff8;outline-offset:-1px}
+.theme-root-frame.high-contrast .chessboard .dark-square{filter:brightness(.82) saturate(1.12);outline:1px solid #0008;outline-offset:-1px}
+.theme-root-frame.high-contrast .legal-dot{box-shadow:0 0 0 3px #fff,0 0 0 5px #111!important}
+.theme-root-frame.high-contrast .legal-capture{border:3px solid #f5b942!important}
+.theme-root-frame.high-contrast .studio-live-board span{outline:1px solid #1115;outline-offset:-1px}
