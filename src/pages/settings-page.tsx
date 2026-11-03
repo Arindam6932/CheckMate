@@ -84,6 +84,9 @@ export default function SettingsPage() {
         {toggle('Legal move hints','Show available destination squares after selecting a piece',p.showLegalMoves,p.setShowLegalMoves,<CircleHelp size={16}/>)}
         {toggle('Last move highlight','Highlight the origin and destination of the previous move',p.highlightLastMove,p.setHighlightLastMove,<Sparkles size={16}/>)}
         {toggle('Compact interface','Reduce spacing in supported panels and controls',p.compactMode,p.setCompactMode,<LayoutGrid size={16}/>)}
+        <div className="studio-subheading"><b>Default board orientation</b><small>Which side should appear at the bottom?</small></div>
+        <div className="orientation-options"><button className={p.boardOrientation==='white'?'active':''} onClick={()=>p.setBoardOrientation('white')}>♙ White at bottom</button><button className={p.boardOrientation==='black'?'active':''} onClick={()=>p.setBoardOrientation('black')}>♟ Black at bottom</button></div>
+        {toggle('Show move list by default','Open the notation panel when the homepage loads',p.showMoveList,p.setShowMoveList,<LayoutGrid size={16}/>)}
       </section>
 
       <section className="studio-card" id="sound">
