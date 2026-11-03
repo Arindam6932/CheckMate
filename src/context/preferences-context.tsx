@@ -140,7 +140,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const style = {
     '--user-accent': accentColor, '--board-light': boardLightColor, '--board-dark': boardDarkColor,
     '--piece-scale': pieceScale / 100, '--board-radius': boardCorners + 'px',
-    '--animation-speed': animationSpeed / 100 + 's',
+    '--animation-duration': animationSpeed * 1.8 + 'ms',
   } as CSSProperties;
 
   return <PreferencesContext.Provider value={value}>
