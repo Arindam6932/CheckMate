@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './context/auth-context';
 import { usePreferences } from './context/preferences-context';
+import { findBestMove } from './lib/chess-ai';
 import { Chess, type Square } from 'chess.js';
 import {
   Activity, ArrowDownUp, ArrowLeft, ArrowRight, Bell, BookOpen, ChevronDown,
@@ -46,6 +47,9 @@ export default function App() {
   const [blackTime, setBlackTime] = useState(600);
   const [clockStarted, setClockStarted] = useState(false);
   const [flagged, setFlagged] = useState<'w' | 'b' | null>(null);
+  const [gameMode, setGameMode] = useState<'local' | 'computer'>('local');
+  const [aiDepth, setAiDepth] = useState(2);
+  const [aiThinking, setAiThinking] = useState(false);
   const [promotionRequest, setPromotionRequest] = useState<{ from: Square; to: Square; color: 'w' | 'b' } | null>(null);
 
   const board = useMemo(() => {
@@ -66,6 +70,27 @@ export default function App() {
     if (clockStarted && whiteTime === 0) setFlagged('w');
     if (clockStarted && blackTime === 0) setFlagged('b');
   }, [clockStarted, whiteTime, blackTime]);
+  useEffect(() => {
+    if (gameMode !== 'computer' || game.turn() !== 'b' || game.isGameOver() || flagged) {
+      setAiThinking(false);
+      return;
+    }
+    setAiThinking(true);
+    const timer = window.setTimeout(() => {
+      const move = findBestMove(game, aiDepth);
+      if (move) {
+        const next = cloneGame(game);
+        const played = next.move(move);
+        const increment = Number(timeControl.split('+')[1] || 0);
+        setBlackTime(value => value + increment);
+        setGame(next);
+        setNotice(next.isCheckmate() ? 'The computer delivered checkmate.' : `Computer played ${played.san}.`);
+      }
+      setAiThinking(false);
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [game, gameMode, aiDepth, flagged, timeControl]);
+
 
   const playedMoves = game.history({ verbose: true });
   const lastMove = playedMoves[playedMoves.length - 1];
@@ -78,7 +103,7 @@ export default function App() {
 
   function chooseSquare(square: Square) {
     const piece = game.get(square);
-    if (flagged || game.isGameOver()) return;
+    if (flagged || game.isGameOver() || (gameMode === 'computer' && game.turn() !== 'w')) return;
     if (selected && legal.includes(square)) {
       const candidate = game.moves({ verbose: true }).find(move => move.from === selected && move.to === square && move.promotion);
       if (candidate) {
@@ -111,7 +136,7 @@ export default function App() {
 
   function completePromotion(piece: 'q' | 'r' | 'b' | 'n') {
     if (!promotionRequest) return;
-    const next = new Chess(game.fen());
+    const next = cloneGame(game);
     const movingSide = promotionRequest.color;
     try {
       next.move({ from: promotionRequest.from, to: promotionRequest.to, promotion: piece });
@@ -125,11 +150,20 @@ export default function App() {
   }
 
   function resetGame() {
+    setGameMode('local'); setAiThinking(false);
     setGame(new Chess()); setSelected(null); setLegal([]);
     const initialSeconds = Number(timeControl.split('+')[0]) * 60;
     setWhiteTime(initialSeconds); setBlackTime(initialSeconds); setClockStarted(false); setFlagged(null); setPromotionRequest(null);
     setNotice('New game started. White to move.');
   }
+  function startComputerGame() {
+    setGame(new Chess()); setSelected(null); setLegal([]); setFlipped(false);
+    setGameMode('computer'); setAiThinking(false); setFlagged(null); setPromotionRequest(null);
+    const initialSeconds = Number(timeControl.split('+')[0]) * 60;
+    setWhiteTime(initialSeconds); setBlackTime(initialSeconds); setClockStarted(false);
+    setNotice('Computer game started. You play White.');
+  }
+
   function undoMove() {
     if (!game.history().length) return;
     const next = cloneGame(game);
@@ -138,7 +172,7 @@ export default function App() {
     setNotice('Last move taken back.');
   }
 
-  const status = flagged ? (flagged === 'w' ? 'BLACK WINS ON TIME' : 'WHITE WINS ON TIME') : game.isCheckmate() ? 'CHECKMATE' : game.isDraw() ? 'DRAW' : game.isCheck() ? 'CHECK' : game.turn() === 'w' ? 'WHITE TO MOVE' : 'BLACK TO MOVE';
+  const status = aiThinking ? 'COMPUTER THINKING' : flagged ? (flagged === 'w' ? 'BLACK WINS ON TIME' : 'WHITE WINS ON TIME') : game.isCheckmate() ? 'CHECKMATE' : game.isDraw() ? 'DRAW' : game.isCheck() ? 'CHECK' : game.turn() === 'w' ? 'WHITE TO MOVE' : 'BLACK TO MOVE';
   const files = flipped ? 'hgfedcba'.split('') : 'abcdefgh'.split('');
   const ranks = flipped ? [1,2,3,4,5,6,7,8] : [8,7,6,5,4,3,2,1];
 
@@ -220,7 +254,7 @@ export default function App() {
               </button>
               <button className="play-card" onClick={() => setNotice('Ranked matchmaking will arrive with the multiplayer phase.')}><div className="play-icon purple"><Trophy size={20}/></div><div className="play-copy"><strong>Ranked</strong><span>Climb the leaderboard</span></div><ChevronRight size={17}/></button>
               <button className="play-card" onClick={() => setNotice('Friend challenges will arrive with social accounts.')}><div className="play-icon blue"><Users size={20}/></div><div className="play-copy"><strong>Play a friend</strong><span>Challenge someone you know</span></div><ChevronRight size={17}/></button>
-              <button className="play-card" onClick={() => setNotice('AI opponents will be added with the engine integration.')}><div className="play-icon green"><Sparkles size={20}/></div><div className="play-copy"><strong>Play computer</strong><span>Practice at your own pace</span></div><ChevronRight size={17}/></button>
+              <button className="play-card" onClick={startComputerGame}><div className="play-icon green"><Sparkles size={20}/></div><div className="play-copy"><strong>Play computer</strong><span>Practice at your own pace</span></div><ChevronRight size={17}/></button>
             </div>
             <div className="time-control"><div><span className="eyebrow">TIME CONTROL</span><strong>{timeControl.replace('+', ' + ')} <small>{Number(timeControl.split('+')[0]) < 5 ? 'Bullet' : Number(timeControl.split('+')[0]) < 10 ? 'Blitz' : Number(timeControl.split('+')[0]) < 30 ? 'Rapid' : 'Classical'}</small></strong></div><select aria-label="Select time control" value={timeControl} onChange={event => { const value = event.target.value; setTimeControl(value); const seconds = Number(value.split('+')[0]) * 60; setWhiteTime(seconds); setBlackTime(seconds); setClockStarted(false); setFlagged(null); setGame(new Chess()); setSelected(null); setLegal([]); setNotice('Time control changed. New game ready.'); }}><option value="3+0">3 + 0</option><option value="5+0">5 + 0</option><option value="10+0">10 + 0</option><option value="15+10">15 + 10</option><option value="30+0">30 + 0</option></select></div>
             <div className="sidebar-divider"/>
