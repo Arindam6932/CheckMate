@@ -12,6 +12,7 @@ import './pages/auth-page.css';
 import './pages/profile-page.css';
 import './pages/online-play-page.css';
 import './pages/game-history-page.css';
+import './components/private-call.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
