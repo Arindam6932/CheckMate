@@ -42,6 +42,7 @@ export default function App() {
   const [blackTime, setBlackTime] = useState(600);
   const [clockStarted, setClockStarted] = useState(false);
   const [flagged, setFlagged] = useState<'w' | 'b' | null>(null);
+  const [promotionRequest, setPromotionRequest] = useState<{ from: Square; to: Square; color: 'w' | 'b' } | null>(null);
 
   const board = useMemo(() => {
     const rows = game.board();
@@ -75,10 +76,16 @@ export default function App() {
     const piece = game.get(square);
     if (flagged || game.isGameOver()) return;
     if (selected && legal.includes(square)) {
+      const candidate = game.moves({ verbose: true }).find(move => move.from === selected && move.to === square && move.promotion);
+      if (candidate) {
+        setPromotionRequest({ from: selected, to: square, color: game.turn() });
+        setSelected(null); setLegal([]);
+        return;
+      }
       const next = new Chess(game.fen());
       try {
         const movingSide = game.turn();
-        next.move({ from: selected, to: square, promotion: 'q' });
+        next.move({ from: selected, to: square });
         const increment = Number(timeControl.split('+')[1] || 0);
         if (movingSide === 'w') setWhiteTime(value => value + increment);
         else setBlackTime(value => value + increment);
@@ -97,10 +104,25 @@ export default function App() {
     }
   }
 
+  function completePromotion(piece: 'q' | 'r' | 'b' | 'n') {
+    if (!promotionRequest) return;
+    const next = new Chess(game.fen());
+    const movingSide = promotionRequest.color;
+    try {
+      next.move({ from: promotionRequest.from, to: promotionRequest.to, promotion: piece });
+      const increment = Number(timeControl.split('+')[1] || 0);
+      if (movingSide === 'w') setWhiteTime(value => value + increment);
+      else setBlackTime(value => value + increment);
+      setClockStarted(true); setGame(next);
+      setNotice(next.isCheckmate() ? 'Checkmate. Game over.' : next.isCheck() ? 'Check.' : 'Pawn promoted.');
+    } catch { setNotice('Promotion could not be completed.'); }
+    setPromotionRequest(null);
+  }
+
   function resetGame() {
     setGame(new Chess()); setSelected(null); setLegal([]);
     const initialSeconds = Number(timeControl.split('+')[0]) * 60;
-    setWhiteTime(initialSeconds); setBlackTime(initialSeconds); setClockStarted(false); setFlagged(null);
+    setWhiteTime(initialSeconds); setBlackTime(initialSeconds); setClockStarted(false); setFlagged(null); setPromotionRequest(null);
     setNotice('New game started. White to move.');
   }
   function undoMove() {
@@ -108,7 +130,7 @@ export default function App() {
     const next = new Chess();
     next.loadPgn(game.pgn());
     next.undo();
-    setGame(next); setSelected(null); setLegal([]); setFlagged(null);
+    setGame(next); setSelected(null); setLegal([]); setFlagged(null); setPromotionRequest(null);
     setNotice('Last move taken back.');
   }
 
@@ -171,6 +193,7 @@ export default function App() {
               </div>
               <div className="board-coordinates right">{ranks.map(n => <span key={n}>{n}</span>)}</div>
             </div>
+            {promotionRequest && <div className="promotion-panel"><strong>Choose promotion</strong><div>{(['q','r','b','n'] as const).map(piece => <button key={piece} onClick={() => completePromotion(piece)} aria-label={`Promote to ${piece}`}><span className={promotionRequest.color === 'w' ? 'white-piece' : 'black-piece'}>{glyph[promotionRequest.color + piece]}</span></button>)}</div><button className="promotion-cancel" onClick={() => setPromotionRequest(null)}>Cancel</button></div>}
             <div className="board-controls">
               <div className="turn-indicator"><span className={game.turn() === 'w' ? 'turn-piece white-turn' : 'turn-piece black-turn'}>{game.turn() === 'w' ? '♙' : '♟'}</span><div><b>{status}</b><small>{notice}</small></div></div>
               <div className="control-buttons"><button onClick={undoMove} disabled={!game.history().length} title="Undo"><ArrowLeft size={17}/></button><button onClick={() => setFlipped(!flipped)} title="Flip board"><ArrowDownUp size={17}/></button><button onClick={resetGame} title="Restart"><History size={17}/></button><button onClick={() => setNotice('Sound controls will be available with the settings system.')} title="Sound"><Volume2 size={17}/></button></div>
