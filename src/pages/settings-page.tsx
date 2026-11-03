@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
+import type { CSSProperties, ReactNode } from 'react';
 import {
   ArrowLeft, Check, ChevronRight, CircleHelp, Contrast, Eye, Gamepad2, Headphones,
-  LayoutGrid, Monitor, Moon, Palette, RotateCcw, Settings, Sparkles, Sun, Volume2,
+  LayoutGrid, Monitor, Moon, Palette, RotateCcw, Sparkles, Sun, Volume2,
   VolumeX, WandSparkles
 } from 'lucide-react';
 import { usePreferences, type Appearance, type BackgroundStyle } from '../context/preferences-context';
@@ -38,7 +39,7 @@ export default function SettingsPage() {
     {name:'Sakura',apply:()=>{p.setAppearance('light');p.setAccentColor('#c78398');p.setBackgroundStyle('plain');p.setBoardTheme('sakura');p.setPieceSet('fantasy');p.setCustomBoardColors(false);}},
     {name:'Carbon',apply:()=>{p.setAppearance('dark');p.setAccentColor('#aeb4b0');p.setBackgroundStyle('forest');p.setBoardTheme('carbon');p.setPieceSet('mono');p.setCustomBoardColors(false);}},
   ];
-  const toggle = (label:string,description:string,checked:boolean,onChange:(value:boolean)=>void,icon:React.ReactNode) =>
+  const toggle = (label:string,description:string,checked:boolean,onChange:(value:boolean)=>void,icon:ReactNode) =>
     <button type="button" className="studio-toggle" onClick={()=>onChange(!checked)}><span className="studio-toggle-icon">{icon}</span><span className="studio-toggle-copy"><b>{label}</b><small>{description}</small></span><i className={checked?'toggle-on':'toggle-off'}>{checked&&<Check size={11}/>}</i></button>;
 
   return <main className="settings-screen studio-settings">
@@ -55,7 +56,7 @@ export default function SettingsPage() {
         <div className="studio-heading"><div><Monitor size={17}/><b>App appearance</b></div><small>Choose your global theme and accent</small></div>
         <div className="studio-choice-row">{([{value:'dark',label:'Dark',icon:<Moon size={18}/>},{value:'light',label:'Light',icon:<Sun size={18}/>},{value:'system',label:'System',icon:<Monitor size={18}/>} ] as const).map(option=><button key={option.value} className={p.appearance===option.value?'studio-choice active':'studio-choice'} onClick={()=>p.setAppearance(option.value as Appearance)}>{option.icon}<b>{option.label}</b>{p.appearance===option.value&&<Check size={13}/>}</button>)}</div>
         <div className="studio-subheading"><b>Accent colour</b><small>Buttons, highlights and active states</small></div>
-        <div className="accent-options">{accents.map(([label,color])=><button key={label} title={label} aria-label={label+' accent'} className={p.accentColor.toLowerCase()===color.toLowerCase()?'accent-swatch selected':'accent-swatch'} style={{'--swatch':color} as React.CSSProperties} onClick={()=>p.setAccentColor(color)}>{p.accentColor.toLowerCase()===color.toLowerCase()&&<Check size={14}/>}</button>)}<label className="custom-color"><input type="color" value={p.accentColor} onChange={e=>p.setAccentColor(e.target.value)}/><span>Custom</span></label></div>
+        <div className="accent-options">{accents.map(([label,color])=><button key={label} title={label} aria-label={label+' accent'} className={p.accentColor.toLowerCase()===color.toLowerCase()?'accent-swatch selected':'accent-swatch'} style={{'--swatch':color} as CSSProperties} onClick={()=>p.setAccentColor(color)}>{p.accentColor.toLowerCase()===color.toLowerCase()&&<Check size={14}/>}</button>)}<label className="custom-color"><input type="color" value={p.accentColor} onChange={e=>p.setAccentColor(e.target.value)}/><span>Custom</span></label></div>
         <div className="studio-subheading"><b>Background atmosphere</b><small>Change the mood behind your panels</small></div>
         <div className="background-options">{backgrounds.map(item=><button key={item.value} onClick={()=>p.setBackgroundStyle(item.value)} className={p.backgroundStyle===item.value?'background-choice active':'background-choice'}><span className={'background-art background-art-'+item.value}/><b>{item.label}</b><small>{item.description}</small></button>)}</div>
       </section>
