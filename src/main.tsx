@@ -9,6 +9,7 @@ import OnlinePlayPage from './pages/online-play-page';
 import GameHistoryPage from './pages/game-history-page';
 import CommunityPage from './pages/community-page';
 import SettingsPage from './pages/settings-page';
+import PuzzlesPage from './pages/puzzles-page';
 import { PreferencesProvider, ThemeFrame } from './context/preferences-context';
 import './styles.css';
 import './pages/auth-page.css';
@@ -18,6 +19,7 @@ import './pages/game-history-page.css';
 import './components/private-call.css';
 import './pages/community-page.css';
 import './pages/settings-page.css';
+import './pages/puzzles-page.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -33,6 +35,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               <Route path="/history" element={<GameHistoryPage />} />
               <Route path="/community" element={<CommunityPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/puzzles" element={<PuzzlesPage />} />
               <Route path="*" element={<App />} />
             </Routes>
           </AuthProvider>
