@@ -28,8 +28,13 @@ The Vite app runs at `http://localhost:5173`; the realtime server runs at `http:
 - `game:reconnect`: rejoin an active game during a 60-second disconnect grace period.
 - `call:join`, `call:signal`, `call:leave`: private WebRTC signaling for the two active players only.
 - `GET /ice-servers`: authenticated short-lived TURN credentials.
+- `POST /tournaments/:id/register`: verified-email registration with an atomic capacity check.
+- `DELETE /tournaments/:id/register`: withdraw before the event starts.
+- `POST /tournaments/:id/close`: organizer-only registration closure.
 
 Every socket connection must present a Firebase ID token with a verified email claim. The server verifies it with the Firebase Admin SDK. Only the two assigned player UIDs may act in a game room; spectator joining is not implemented. The server owns move validation and clock accounting, including increments and timeout outcomes. Completed games and provisional Elo updates are written atomically to Firestore; participants can read only their own game records.
+
+Tournament registration uses Firebase Admin transactions on the realtime server. The participant subcollection is read-only to browser clients, preventing direct writes that could bypass capacity enforcement. The API verifies Firebase ID tokens and requires a verified email address.
 
 ## Current MVP limitations
 
