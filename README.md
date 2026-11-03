@@ -10,7 +10,7 @@
 - Interactive local chessboard powered by `chess.js`.
 - Legal move highlighting, pawn promotion, move history, undo, restart, and board flip.
 - Five local time controls with clocks and increment support.
-- Local computer opponent with ten selectable skill levels, material/positional evaluation, and skill-weighted move selection (not Stockfish).
+- Ten-level local computer opponent powered by Stockfish 19 Lite WebAssembly in a dedicated browser worker; level 10 uses maximum engine skill and a deeper timed search.
 - Ten board palettes and ten independently selectable piece styles, including marble.
 - Interactive mate-in-one tactics trainer at `/puzzles`.
 - Ten replayable opening lines and fundamentals lessons at `/learn`.
@@ -40,7 +40,7 @@
 - Active online games and matchmaking queues are held in server memory; server restarts lose in-progress games.
 - Tournament registration and withdrawal are verified by the realtime server; capacity is enforced transactionally. Automated pairings, standings, rounds, and result adjudication are still planned.
 - Rated and casual matchmaking are separated; only rated public matchmaking changes Elo. The Elo model remains provisional, with no Glicko-2, anti-cheat review, or seasonal resets yet.
-- The computer opponent is a lightweight local search engine, not Stockfish. Engine analysis and post-game review are still planned.
+- The computer opponent runs Stockfish 19 Lite locally in the browser; the single-threaded WASM build requires no special cross-origin isolation headers. The engine is not a guarantee of a fixed human Elo rating; actual search strength depends on device performance and the time limit. Full game analysis and post-game review are still planned.
 - Spectator mode, clubs, attachments, moderation tools, admin dashboard, and premium subscriptions are not implemented yet.
 - WebRTC uses STUN by default. Production calls require a TURN service, HTTPS, network testing, and monitoring.
 - No production browser test or deployment has been completed in this build environment.
