@@ -12,6 +12,8 @@
 - Five selectable time controls with active player clocks and increment support.
 - Ten board palettes and ten independently selectable piece appearances, including marble.
 - Persistent light/dark/system appearance, board and piece preferences, sound preference, and reduced-motion control at `/settings`.
+- Interactive mate-in-one tactics trainer with hints and a locally saved solved count at `/puzzles`.
+- Opening explorer with ten replayable opening lines and fundamentals lessons at `/learn`.
 - Responsive navigation and mobile layout.
 
 ### Account foundation
