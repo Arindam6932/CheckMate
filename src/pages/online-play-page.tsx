@@ -6,7 +6,11 @@ import { ArrowLeft, Copy, LogOut, Radio, Swords, Users } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
 import { connectMultiplayer } from '../lib/multiplayer';
 
-type MatchInfo = { gameId: string; color: 'w' | 'b'; opponentUid: string; timeControl: string };
+type MatchInfo = { gameId: string; color: 'w' | 'b'; opponentUid: string; timeControl: string; whiteTimeMs: number; blackTimeMs: number };
+const formatOnlineClock = (milliseconds: number) => {
+  const seconds = Math.ceil(milliseconds / 1000);
+  return `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
+};
 const glyph: Record<string, string> = { wk:'♔',wq:'♕',wr:'♖',wb:'♗',wn:'♘',wp:'♙',bk:'♚',bq:'♛',br:'♜',bb:'♝',bn:'♞',bp:'♟' };
 
 export default function OnlinePlayPage() {
@@ -23,6 +27,8 @@ export default function OnlinePlayPage() {
   const [inviteCode, setInviteCode] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [busy, setBusy] = useState(false);
+  const [clocks, setClocks] = useState({ white: 600_000, black: 600_000 });
+  const [paused, setPaused] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate('/auth?mode=login', { replace: true });
@@ -35,29 +41,43 @@ export default function OnlinePlayPage() {
       if (!active) { socket.disconnect(); return; }
       socketRef.current = socket;
       socket.on('connect', () => { setConnected(true); setStatus('Connected. Ready to play online.'); });
-      socket.on('disconnect', () => { setConnected(false); setStatus('Connection lost. Reconnecting…'); });
+      socket.on('disconnect', () => { setConnected(false); setPaused(true); setStatus('Connection lost. Reconnecting…'); });
       socket.on('connect_error', error => { setConnected(false); setStatus(error.message); });
       socket.on('queue:waiting', () => setStatus('Searching for an opponent…'));
       socket.on('queue:left', () => setStatus('Matchmaking cancelled.'));
       socket.on('match:found', (data: MatchInfo & { fen: string }) => {
-        setMatch(data); setBusy(false); setGame(new Chess(data.fen)); setSelected(null); setLegal([]);
+        setMatch(data); setBusy(false); setPaused(false); setClocks({ white: data.whiteTimeMs, black: data.blackTimeMs }); setGame(new Chess(data.fen)); setSelected(null); setLegal([]);
         setStatus(data.color === 'w' ? 'You are playing White.' : 'You are playing Black.');
       });
-      socket.on('game:state', (data: { fen: string; pgn: string; check: boolean; checkmate: boolean; draw: boolean; gameOver: boolean }) => {
+      socket.on('game:state', (data: { fen: string; pgn: string; check: boolean; checkmate: boolean; draw: boolean; gameOver: boolean; whiteTimeMs: number; blackTimeMs: number }) => {
         const next = new Chess();
         if (data.pgn) next.loadPgn(data.pgn); else next.load(data.fen);
-        setGame(next); setSelected(null); setLegal([]);
+        setGame(next); setSelected(null); setLegal([]); setPaused(false); setClocks({ white: data.whiteTimeMs, black: data.blackTimeMs });
         setStatus(data.checkmate ? 'Checkmate — game finished.' : data.draw ? 'Draw — game finished.' : data.check ? 'Check.' : 'Game in progress.');
       });
-      socket.on('game:ended', (data: { result: string; reason: string }) => setStatus(data.result === 'draw' ? 'Draw agreed.' : `Game ended: ${data.reason}.`));
+      socket.on('game:ended', (data: { result: string; reason: string; whiteTimeMs?: number; blackTimeMs?: number }) => { setPaused(true); if (data.whiteTimeMs !== undefined && data.blackTimeMs !== undefined) setClocks({ white: data.whiteTimeMs, black: data.blackTimeMs }); setStatus(data.result === 'draw' ? 'Draw agreed.' : `Game ended: ${data.reason}.`); });
       socket.on('game:draw-offered', () => setStatus('Your opponent offered a draw.'));
       socket.on('game:draw-declined', () => setStatus('Draw offer declined.'));
-      socket.on('game:opponent-disconnected', () => setStatus('Your opponent disconnected. Waiting for reconnection…'));
+      socket.on('game:opponent-disconnected', () => { setPaused(true); setStatus('Your opponent disconnected. Clocks paused for 60 seconds.'); });
+      socket.on('game:opponent-reconnected', () => { setPaused(false); setStatus('Your opponent reconnected. Game resumed.'); });
       socket.on('game:error', (data: { message: string }) => setStatus(data.message));
       socket.on('private:created', (data: { code: string }) => { setInviteCode(data.code); setStatus('Private invitation created. Share the code with your opponent.'); });
     }).catch(error => { if (active) setStatus(error instanceof Error ? error.message : 'Could not connect to the game server.'); });
     return () => { active = false; socketRef.current?.disconnect(); socketRef.current = null; };
   }, [user]);
+
+  useEffect(() => {
+    if (connected && match) socketRef.current?.emit('game:reconnect', { gameId: match.gameId });
+  }, [connected, match]);
+
+  useEffect(() => {
+    if (!match || paused || game.isGameOver()) return;
+    const timer = window.setInterval(() => {
+      if (game.turn() === 'w') setClocks(value => ({ ...value, white: Math.max(0, value.white - 1000) }));
+      else setClocks(value => ({ ...value, black: Math.max(0, value.black - 1000) }));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [match, game, paused]);
 
   function joinQueue() {
     if (!socketRef.current || !connected) { setStatus('Waiting for a secure server connection.'); return; }
@@ -98,7 +118,7 @@ export default function OnlinePlayPage() {
     <header className="online-header"><Link to="/" className="online-back"><ArrowLeft size={16}/> CHECKMATE</Link><span className="online-status"><i className={connected ? 'connected' : ''}/>{connected ? 'SERVER CONNECTED' : 'CONNECTING'}</span></header>
     <div className="online-layout">
       <section className="online-board-panel">
-        <div className="online-player-row"><div className="online-player-avatar">♟</div><div><b>{match ? 'Opponent' : 'Online arena'}</b><small>{match ? 'CHECKMATE player' : 'Real-time matchmaking'}</small></div><span className="online-control">{match?.timeControl || timeControl}</span></div>
+        <div className="online-player-row"><div className="online-player-avatar">♟</div><div><b>{match ? 'Opponent' : 'Online arena'}</b><small>{match ? 'CHECKMATE player' : 'Real-time matchmaking'}</small></div>{match && <div className="online-clock-pair"><span className={game.turn()==='w'?'online-clock-active':''}>♙ {formatOnlineClock(clocks.white)}</span><span className={game.turn()==='b'?'online-clock-active':''}>♟ {formatOnlineClock(clocks.black)}</span></div>}<span className="online-control">{match?.timeControl || timeControl}</span></div>
         {match ? <div className="online-board-wrap"><div className="online-coords">{ranks.map(rank=><span key={rank}>{rank}</span>)}</div><div className="online-board">
           {displayRows.map((row,r)=>row.map((piece,col)=>{
             const square=(files[col]+ranks[r]) as Square;
