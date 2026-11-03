@@ -17,6 +17,7 @@ type GameRoom = {
   blackUid: string;
   chess: Chess;
   timeControl: TimeControl;
+  rated: boolean;
   status: 'active' | 'finished';
   drawOfferBy: string | null;
   createdAt: number;
@@ -48,7 +49,7 @@ const firebaseAuth = getAuth(adminApp);
 const firestore = getFirestore(adminApp);
 
 const games = new Map<string, GameRoom>();
-const queues = new Map<TimeControl, string>();
+const queues = new Map<string, string>();
 const privateInvites = new Map<string, { socketId: string; timeControl: TimeControl; expiresAt: number }>();
 const disconnectTimers = new Map<string, NodeJS.Timeout>();
 const validControls: TimeControl[] = ['3+0', '5+0', '10+0', '15+10', '30+0'];
@@ -63,7 +64,7 @@ function removeFromQueue(socketId: string) {
   }
 }
 
-function emitGameStart(white: PlayerSocket, black: PlayerSocket, timeControl: TimeControl, inviteCode?: string) {
+function emitGameStart(white: PlayerSocket, black: PlayerSocket, timeControl: TimeControl, rated = false, inviteCode?: string) {
   const id = randomUUID();
   const [minutes, increment] = timeControl.split('+').map(Number);
   const initialTime = minutes * 60_000;
@@ -73,6 +74,7 @@ function emitGameStart(white: PlayerSocket, black: PlayerSocket, timeControl: Ti
     blackUid: black.data.uid as string,
     chess: new Chess(),
     timeControl,
+    rated,
     status: 'active',
     drawOfferBy: null,
     createdAt: Date.now(),
@@ -87,7 +89,7 @@ function emitGameStart(white: PlayerSocket, black: PlayerSocket, timeControl: Ti
   games.set(id, room);
   white.join(id);
   black.join(id);
-  const base = { gameId: id, fen: room.chess.fen(), pgn: '', timeControl, inviteCode, whiteTimeMs: room.whiteTimeMs, blackTimeMs: room.blackTimeMs, turn: 'w' };
+  const base = { gameId: id, fen: room.chess.fen(), pgn: '', timeControl, rated, inviteCode, whiteTimeMs: room.whiteTimeMs, blackTimeMs: room.blackTimeMs, turn: 'w' };
   white.emit('match:found', { ...base, color: 'w', opponentUid: room.blackUid });
   black.emit('match:found', { ...base, color: 'b', opponentUid: room.whiteUid });
 }
@@ -145,8 +147,8 @@ async function persistGame(room: GameRoom, result: string, reason: string) {
       const blackBefore = Number(blackRatings[category] ?? 1500);
       const expectedWhite = 1 / (1 + Math.pow(10, (blackBefore - whiteBefore) / 400));
       const expectedBlack = 1 - expectedWhite;
-      const whiteDelta = Math.round(32 * (scoreWhite - expectedWhite));
-      const blackDelta = Math.round(32 * (scoreBlack - expectedBlack));
+      const whiteDelta = room.rated ? Math.round(32 * (scoreWhite - expectedWhite)) : 0;
+      const blackDelta = room.rated ? Math.round(32 * (scoreBlack - expectedBlack)) : 0;
       const whiteAfter = whiteBefore + whiteDelta;
       const blackAfter = blackBefore + blackDelta;
 
@@ -167,6 +169,7 @@ async function persistGame(room: GameRoom, result: string, reason: string) {
         blackUid: room.blackUid,
         timeControl: room.timeControl,
         ratingCategory: category,
+        rated: room.rated,
         result,
         reason,
         pgn: room.chess.pgn(),
@@ -221,21 +224,23 @@ io.use(async (socket, next) => {
 io.on('connection', (socket: PlayerSocket) => {
   socket.emit('server:ready', { uid: socket.data.uid });
 
-  socket.on('queue:join', (payload: { timeControl?: unknown } = {}) => {
+  socket.on('queue:join', (payload: { timeControl?: unknown; rated?: unknown } = {}) => {
     if (!allowRate(socket, 'queue:join', 12, 60_000)) return sendError(socket, 'Too many matchmaking requests. Please wait a moment.');
     const control = payload.timeControl;
     if (!validTimeControl(control)) return sendError(socket, 'Choose a supported time control.');
+    const rated = payload.rated !== false;
+    const queueKey = control + ':' + (rated ? 'rated' : 'casual');
     removeFromQueue(socket.id);
-    const waitingId = queues.get(control);
+    const waitingId = queues.get(queueKey);
     const opponent = waitingId ? io.sockets.sockets.get(waitingId) : undefined;
 
     if (opponent?.connected && opponent.data.uid !== socket.data.uid) {
-      queues.delete(control);
-      emitGameStart(opponent, socket, control);
+      queues.delete(queueKey);
+      emitGameStart(opponent, socket, control, rated);
       return;
     }
-    queues.set(control, socket.id);
-    socket.emit('queue:waiting', { timeControl: control });
+    queues.set(queueKey, socket.id);
+    socket.emit('queue:waiting', { timeControl: control, rated });
   });
 
   socket.on('queue:leave', () => {
@@ -261,7 +266,7 @@ io.on('connection', (socket: PlayerSocket) => {
     }
     if (host.data.uid === socket.data.uid) return sendError(socket, 'You cannot join your own invitation.');
     privateInvites.delete(code);
-    emitGameStart(host, socket, invite.timeControl, code);
+    emitGameStart(host, socket, invite.timeControl, false, code);
   });
 
   socket.on('game:move', (payload: { gameId?: unknown; from?: unknown; to?: unknown; promotion?: unknown }) => {
