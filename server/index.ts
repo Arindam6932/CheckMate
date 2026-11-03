@@ -183,6 +183,10 @@ io.on('connection', (socket: PlayerSocket) => {
     const promotion = ['q', 'r', 'b', 'n'].includes(String(payload.promotion)) ? String(payload.promotion) as 'q' | 'r' | 'b' | 'n' : undefined;
     try {
       const move = room.chess.move({ from: payload.from as Square, to: payload.to as Square, ...(promotion ? { promotion } : {}) });
+      if (room.drawOfferBy && room.drawOfferBy !== uid) {
+        room.drawOfferBy = null;
+        socket.to(room.id).emit('game:draw-declined');
+      }
       if (color === 'w') room.whiteTimeMs += room.incrementMs; else room.blackTimeMs += room.incrementMs;
       room.lastMoveAt = Date.now();
       if (room.chess.isGameOver()) room.status = 'finished';
