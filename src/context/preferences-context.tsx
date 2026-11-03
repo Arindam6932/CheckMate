@@ -1,46 +1,109 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 
 export type Appearance = 'dark' | 'light' | 'system';
+export type BackgroundStyle = 'aurora' | 'midnight' | 'forest' | 'plain';
+export type Density = 'comfortable' | 'compact';
+
 type PreferencesValue = {
   appearance: Appearance;
   isDark: boolean;
   boardTheme: string;
   pieceSet: string;
   soundEnabled: boolean;
+  soundVolume: number;
   animationsEnabled: boolean;
+  animationSpeed: number;
+  showCoordinates: boolean;
+  showLegalMoves: boolean;
+  highlightLastMove: boolean;
+  compactMode: boolean;
+  backgroundStyle: BackgroundStyle;
+  accentColor: string;
+  customBoardColors: boolean;
+  boardLightColor: string;
+  boardDarkColor: string;
+  pieceScale: number;
+  boardCorners: number;
   setAppearance: (value: Appearance) => void;
   setBoardTheme: (value: string) => void;
   setPieceSet: (value: string) => void;
   setSoundEnabled: (value: boolean) => void;
+  setSoundVolume: (value: number) => void;
   setAnimationsEnabled: (value: boolean) => void;
+  setAnimationSpeed: (value: number) => void;
+  setShowCoordinates: (value: boolean) => void;
+  setShowLegalMoves: (value: boolean) => void;
+  setHighlightLastMove: (value: boolean) => void;
+  setCompactMode: (value: boolean) => void;
+  setBackgroundStyle: (value: BackgroundStyle) => void;
+  setAccentColor: (value: string) => void;
+  setCustomBoardColors: (value: boolean) => void;
+  setBoardLightColor: (value: string) => void;
+  setBoardDarkColor: (value: string) => void;
+  setPieceScale: (value: number) => void;
+  setBoardCorners: (value: number) => void;
+  resetPreferences: () => void;
 };
 
 const PreferencesContext = createContext<PreferencesValue | null>(null);
+const defaults = {
+  appearance: 'dark' as Appearance, boardTheme: 'classic', pieceSet: 'classic',
+  soundEnabled: true, soundVolume: 65, animationsEnabled: true, animationSpeed: 100,
+  showCoordinates: true, showLegalMoves: true, highlightLastMove: true,
+  compactMode: false, backgroundStyle: 'aurora' as BackgroundStyle, accentColor: '#75d6a1',
+  customBoardColors: false, boardLightColor: '#e9e8d9', boardDarkColor: '#56866c',
+  pieceScale: 100, boardCorners: 9,
+};
 const readPreference = (key: string, fallback: string) => {
-  try { return window.localStorage.getItem(key) || fallback; }
+  try { return window.localStorage.getItem('checkmate.' + key) ?? fallback; }
   catch { return fallback; }
+};
+const readBool = (key: string, fallback: boolean) => readPreference(key, String(fallback)) === 'true';
+const readNumber = (key: string, fallback: number, min: number, max: number) => {
+  const value = Number(readPreference(key, String(fallback)));
+  return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
 };
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [appearance, setAppearance] = useState<Appearance>(() => {
-    const value = readPreference('checkmate.appearance', 'dark');
+    const value = readPreference('appearance', defaults.appearance);
     return value === 'light' || value === 'system' ? value : 'dark';
   });
-  const [boardTheme, setBoardTheme] = useState(() => readPreference('checkmate.boardTheme', 'classic'));
-  const [pieceSet, setPieceSet] = useState(() => readPreference('checkmate.pieceSet', 'classic'));
-  const [soundEnabled, setSoundEnabled] = useState(() => readPreference('checkmate.sound', 'true') === 'true');
-  const [animationsEnabled, setAnimationsEnabled] = useState(() => readPreference('checkmate.animations', 'true') === 'true');
+  const [boardTheme, setBoardTheme] = useState(() => readPreference('boardTheme', defaults.boardTheme));
+  const [pieceSet, setPieceSet] = useState(() => readPreference('pieceSet', defaults.pieceSet));
+  const [soundEnabled, setSoundEnabled] = useState(() => readBool('sound', defaults.soundEnabled));
+  const [soundVolume, setSoundVolume] = useState(() => readNumber('soundVolume', defaults.soundVolume, 0, 100));
+  const [animationsEnabled, setAnimationsEnabled] = useState(() => readBool('animations', defaults.animationsEnabled));
+  const [animationSpeed, setAnimationSpeed] = useState(() => readNumber('animationSpeed', defaults.animationSpeed, 50, 150));
+  const [showCoordinates, setShowCoordinates] = useState(() => readBool('coordinates', defaults.showCoordinates));
+  const [showLegalMoves, setShowLegalMoves] = useState(() => readBool('legalMoves', defaults.showLegalMoves));
+  const [highlightLastMove, setHighlightLastMove] = useState(() => readBool('lastMove', defaults.highlightLastMove));
+  const [compactMode, setCompactMode] = useState(() => readBool('compactMode', defaults.compactMode));
+  const [backgroundStyle, setBackgroundStyle] = useState<BackgroundStyle>(() => {
+    const value = readPreference('backgroundStyle', defaults.backgroundStyle);
+    return ['aurora','midnight','forest','plain'].includes(value) ? value as BackgroundStyle : defaults.backgroundStyle;
+  });
+  const [accentColor, setAccentColor] = useState(() => readPreference('accentColor', defaults.accentColor));
+  const [customBoardColors, setCustomBoardColors] = useState(() => readBool('customBoardColors', defaults.customBoardColors));
+  const [boardLightColor, setBoardLightColor] = useState(() => readPreference('boardLightColor', defaults.boardLightColor));
+  const [boardDarkColor, setBoardDarkColor] = useState(() => readPreference('boardDarkColor', defaults.boardDarkColor));
+  const [pieceScale, setPieceScale] = useState(() => readNumber('pieceScale', defaults.pieceScale, 80, 120));
+  const [boardCorners, setBoardCorners] = useState(() => readNumber('boardCorners', defaults.boardCorners, 0, 24));
   const [systemDark, setSystemDark] = useState(() => window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? true);
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem('checkmate.appearance', appearance);
-      window.localStorage.setItem('checkmate.boardTheme', boardTheme);
-      window.localStorage.setItem('checkmate.pieceSet', pieceSet);
-      window.localStorage.setItem('checkmate.sound', String(soundEnabled));
-      window.localStorage.setItem('checkmate.animations', String(animationsEnabled));
-    } catch { /* Preferences remain usable for this session if storage is unavailable. */ }
-  }, [appearance, boardTheme, pieceSet, soundEnabled, animationsEnabled]);
+    const values: Record<string, string> = {
+      appearance, boardTheme, pieceSet, sound: String(soundEnabled), soundVolume: String(soundVolume),
+      animations: String(animationsEnabled), animationSpeed: String(animationSpeed),
+      coordinates: String(showCoordinates), legalMoves: String(showLegalMoves), lastMove: String(highlightLastMove),
+      compactMode: String(compactMode), backgroundStyle, accentColor, customBoardColors: String(customBoardColors),
+      boardLightColor, boardDarkColor, pieceScale: String(pieceScale), boardCorners: String(boardCorners),
+    };
+    try { Object.entries(values).forEach(([key, value]) => window.localStorage.setItem('checkmate.' + key, value)); }
+    catch { /* Preferences remain available for this session if storage is unavailable. */ }
+  }, [appearance, boardTheme, pieceSet, soundEnabled, soundVolume, animationsEnabled, animationSpeed,
+    showCoordinates, showLegalMoves, highlightLastMove, compactMode, backgroundStyle, accentColor,
+    customBoardColors, boardLightColor, boardDarkColor, pieceScale, boardCorners]);
 
   useEffect(() => {
     const media = window.matchMedia?.('(prefers-color-scheme: dark)');
@@ -50,14 +113,39 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     return () => media.removeEventListener?.('change', update);
   }, []);
 
-  const value = useMemo(() => ({
-    appearance,
-    isDark: appearance === 'dark' || (appearance === 'system' && systemDark),
-    boardTheme, pieceSet, soundEnabled, animationsEnabled,
-    setAppearance, setBoardTheme, setPieceSet, setSoundEnabled, setAnimationsEnabled,
-  }), [appearance, systemDark, boardTheme, pieceSet, soundEnabled, animationsEnabled]);
+  const resetPreferences = () => {
+    setAppearance(defaults.appearance); setBoardTheme(defaults.boardTheme); setPieceSet(defaults.pieceSet);
+    setSoundEnabled(defaults.soundEnabled); setSoundVolume(defaults.soundVolume);
+    setAnimationsEnabled(defaults.animationsEnabled); setAnimationSpeed(defaults.animationSpeed);
+    setShowCoordinates(defaults.showCoordinates); setShowLegalMoves(defaults.showLegalMoves);
+    setHighlightLastMove(defaults.highlightLastMove); setCompactMode(defaults.compactMode);
+    setBackgroundStyle(defaults.backgroundStyle); setAccentColor(defaults.accentColor);
+    setCustomBoardColors(defaults.customBoardColors); setBoardLightColor(defaults.boardLightColor);
+    setBoardDarkColor(defaults.boardDarkColor); setPieceScale(defaults.pieceScale); setBoardCorners(defaults.boardCorners);
+  };
 
-  return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;
+  const value = useMemo(() => ({
+    appearance, isDark: appearance === 'dark' || (appearance === 'system' && systemDark),
+    boardTheme, pieceSet, soundEnabled, soundVolume, animationsEnabled, animationSpeed,
+    showCoordinates, showLegalMoves, highlightLastMove, compactMode, backgroundStyle, accentColor,
+    customBoardColors, boardLightColor, boardDarkColor, pieceScale, boardCorners,
+    setAppearance, setBoardTheme, setPieceSet, setSoundEnabled, setSoundVolume, setAnimationsEnabled,
+    setAnimationSpeed, setShowCoordinates, setShowLegalMoves, setHighlightLastMove, setCompactMode,
+    setBackgroundStyle, setAccentColor, setCustomBoardColors, setBoardLightColor, setBoardDarkColor,
+    setPieceScale, setBoardCorners, resetPreferences,
+  }), [appearance, systemDark, boardTheme, pieceSet, soundEnabled, soundVolume, animationsEnabled,
+    animationSpeed, showCoordinates, showLegalMoves, highlightLastMove, compactMode, backgroundStyle,
+    accentColor, customBoardColors, boardLightColor, boardDarkColor, pieceScale, boardCorners]);
+
+  const style = {
+    '--user-accent': accentColor, '--board-light': boardLightColor, '--board-dark': boardDarkColor,
+    '--piece-scale': pieceScale / 100, '--board-radius': boardCorners + 'px',
+    '--animation-speed': animationSpeed / 100 + 's',
+  } as CSSProperties;
+
+  return <PreferencesContext.Provider value={value}>
+    <div className="theme-root" style={style}>{children}</div>
+  </PreferencesContext.Provider>;
 }
 
 export function usePreferences() {
@@ -67,6 +155,10 @@ export function usePreferences() {
 }
 
 export function ThemeFrame({ children }: { children: ReactNode }) {
-  const { isDark, animationsEnabled } = usePreferences();
-  return <div className={`theme-root ${isDark ? '' : 'light'} ${animationsEnabled ? '' : 'motion-off'}`}>{children}</div>;
+  const { isDark, animationsEnabled, showCoordinates, showLegalMoves, highlightLastMove, compactMode, backgroundStyle, customBoardColors } = usePreferences();
+  const classes = ['theme-root-frame', isDark ? 'dark' : 'light', animationsEnabled ? '' : 'motion-off',
+    showCoordinates ? '' : 'hide-coordinates', showLegalMoves ? '' : 'hide-legal-hints',
+    highlightLastMove ? '' : 'hide-last-move', compactMode ? 'compact-mode' : '',
+    customBoardColors ? 'custom-board-colors' : '', 'background-' + backgroundStyle].filter(Boolean).join(' ');
+  return <div className={classes}>{children}</div>;
 }
