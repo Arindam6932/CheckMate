@@ -153,7 +153,7 @@ export default function App() {
         <nav className="main-nav">
           {navItems.map(item => {
             const Icon = item.icon;
-            return <button key={item.label} className={activeNav === item.label ? 'nav-link active' : 'nav-link'} onClick={() => { setActiveNav(item.label); if (item.label !== 'Play') setNotice(item.label + ' is coming in a future build phase.'); }}>
+            return <button key={item.label} className={activeNav === item.label ? 'nav-link active' : 'nav-link'} onClick={() => { setActiveNav(item.label); if (item.label === 'Community') navigate('/community'); else if (item.label !== 'Play') setNotice(item.label + ' is coming in a future build phase.'); }}>
               <Icon size={16} strokeWidth={1.8} />{item.label}
             </button>;
           })}
@@ -230,7 +230,7 @@ export default function App() {
               <button onClick={() => {setActiveNav('Puzzles');setNotice('Daily puzzles are coming soon.')}}><span className="explore-icon coral"><Puzzle size={18}/></span><b>Puzzles</b><small>Sharpen tactics</small></button>
               <button onClick={() => {setActiveNav('Learn');setNotice('Learning academy is coming soon.')}}><span className="explore-icon teal"><BookOpen size={18}/></span><b>Learn</b><small>Build your game</small></button>
               <button onClick={() => {setActiveNav('Tournaments');setNotice('Tournaments are coming soon.')}}><span className="explore-icon amber"><Crown size={18}/></span><b>Events</b><small>Compete together</small></button>
-              <button onClick={() => {setActiveNav('Community');setNotice('Clubs and community are coming soon.')}}><span className="explore-icon pink"><MessageCircle size={18}/></span><b>Community</b><small>Find your people</small></button>
+              <button onClick={() => navigate('/community')}><span className="explore-icon pink"><MessageCircle size={18}/></span><b>Community</b><small>Find your people</small></button>
             </div>
           </aside>
         </section>
