@@ -477,13 +477,16 @@ app.post('/tournaments/:tournamentId/register', async (request, response) => {
         return { status: 409, error: 'This tournament has already started.' };
       }
       const capacity = Number(tournament.capacity);
-      if (!Number.isInteger(capacity) || capacity < 2 || participantsSnapshot.size >= capacity) {
+      const currentCount = Number.isInteger(tournament.participantCount)
+        ? Number(tournament.participantCount) : participantsSnapshot.size;
+      if (!Number.isInteger(capacity) || capacity < 2 || currentCount >= capacity) {
         return { status: 409, error: 'This tournament is full.' };
       }
       const profile = profileSnapshot.data() || {};
       const displayName = typeof profile.displayName === 'string' ? profile.displayName.slice(0, 30) : 'CHECKMATE player';
       transaction.create(participantRef, { uid, displayName, joinedAt: FieldValue.serverTimestamp() });
-      return { status: 201, alreadyJoined: false, count: participantsSnapshot.size + 1 };
+      transaction.update(tournamentRef, { participantCount: currentCount + 1 });
+      return { status: 201, alreadyJoined: false, count: currentCount + 1 };
     });
     const { status, ...body } = outcome;
     response.status(status).json(body);
@@ -511,8 +514,12 @@ app.delete('/tournaments/:tournamentId/register', async (request, response) => {
       if (tournament.startsAt instanceof Timestamp && tournament.startsAt.toMillis() <= Date.now()) {
         return { status: 409, error: 'You cannot withdraw after the tournament has started.' };
       }
+      const participantsSnapshot = await transaction.get(tournamentRef.collection('participants'));
+      const currentCount = Number.isInteger(tournament.participantCount)
+        ? Number(tournament.participantCount) : participantsSnapshot.size;
       transaction.delete(participantRef);
-      return { status: 200, withdrawn: true };
+      transaction.update(tournamentRef, { participantCount: Math.max(0, currentCount - 1) });
+      return { status: 200, withdrawn: true, count: Math.max(0, currentCount - 1) };
     });
     const { status, ...body } = outcome;
     response.status(status).json(body);
