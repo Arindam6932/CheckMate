@@ -9,7 +9,7 @@ export async function connectMultiplayer(): Promise<Socket> {
   const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
   return io(serverUrl, {
     auth: callback => {
-      void currentUser.getIdToken().then(token => callback({ token })).catch(() => callback({ token: '' }));
+      void currentUser.getIdToken(true).then(token => callback({ token })).catch(() => callback({ token: '' }));
     },
     transports: ['websocket', 'polling'],
     reconnection: true,
