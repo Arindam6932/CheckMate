@@ -7,6 +7,7 @@ import {
   VolumeX, WandSparkles, ImagePlus, Trash2
 } from 'lucide-react';
 import { usePreferences, type Appearance, type BackgroundStyle } from '../context/preferences-context';
+import { useAuth } from '../context/auth-context';
 
 const boardThemes = [
   ['classic','Classic','#e9e8d9','#56866c'],['walnut','Walnut','#dfc29b','#82583d'],
@@ -33,6 +34,7 @@ const backgrounds: {value:BackgroundStyle;label:string;description:string}[] = [
 
 export default function SettingsPage() {
   const p = usePreferences();
+  const { user } = useAuth();
   const [backgroundError, setBackgroundError] = useState('');
   const presets = [
     {name:'Jade room',apply:()=>{p.setAppearance('dark');p.setAccentColor('#75d6a1');p.setBackgroundStyle('aurora');p.setBoardTheme('emerald');p.setPieceSet('classic');p.setCustomBoardColors(false);}},
@@ -47,8 +49,13 @@ export default function SettingsPage() {
   return <main className="settings-screen studio-settings">
     <header className="settings-header"><Link to="/" className="online-back"><ArrowLeft size={16}/> CHECKMATE</Link><span className="online-eyebrow">PLAYER CONTROL CENTRE</span></header>
     <section className="settings-content">
-      <div className="settings-title"><div className="settings-title-icon"><WandSparkles size={21}/></div><div><span className="online-eyebrow">YOUR BOARD. YOUR RULES.</span><h1>Personalise CHECKMATE</h1><p>Fine-tune the look, feel, board and playing experience. Changes save automatically on this device.</p></div></div>
+      <div className="settings-title"><div className="settings-title-icon"><WandSparkles size={21}/></div><div><span className="online-eyebrow">YOUR BOARD. YOUR RULES.</span><h1>Personalise CHECKMATE</h1><p>Fine-tune your board and playing experience. Signed-in changes sync to your CHECKMATE account.</p></div></div>
 
+      <div className={p.syncStatus==='error'?'settings-sync-banner sync-error':'settings-sync-banner'}>
+        <span className={'sync-indicator sync-'+p.syncStatus}/>
+        <div><b>{p.syncStatus==='loading'?'Loading account settings':p.syncStatus==='saving'?'Syncing your settings':p.syncStatus==='error'?'Cloud sync unavailable':p.syncStatus==='signed-out'?'Sign in to save your settings':'Settings synced to your account'}</b><small>{user ? 'Your preferences are stored in Firebase and follow your account.' : 'Settings are not saved for guest sessions. Sign in to enable account sync.'}</small></div>
+        {!user&&<Link to="/auth?mode=login">Sign in</Link>}
+      </div>
       <nav className="settings-category-nav" aria-label="Settings categories"><a href="#app-settings">App settings</a><a href="#appearance">Appearance</a><a href="#gameplay">Gameplay</a><a href="#board">Board & pieces</a><a href="#sound">Sound & motion</a></nav>
 
       <section className="studio-card" id="app-settings">
@@ -68,12 +75,12 @@ export default function SettingsPage() {
         <div className="accent-options">{accents.map(([label,color])=><button key={label} title={label} aria-label={label+' accent'} className={p.accentColor.toLowerCase()===color.toLowerCase()?'accent-swatch selected':'accent-swatch'} style={{'--swatch':color} as CSSProperties & {'--swatch': string}} onClick={()=>p.setAccentColor(color)}>{p.accentColor.toLowerCase()===color.toLowerCase()&&<Check size={14}/>}</button>)}<label className="custom-color"><input type="color" value={p.accentColor} onChange={e=>p.setAccentColor(e.target.value)}/><span>Custom</span></label></div>
         <div className="studio-subheading"><b>Background atmosphere</b><small>Change the mood behind your panels</small></div>
         <div className="background-options">{backgrounds.map(item=><button key={item.value} onClick={()=>p.setBackgroundStyle(item.value)} className={p.backgroundStyle===item.value?'background-choice active':'background-choice'}><span className={'background-art background-art-'+item.value}/><b>{item.label}</b><small>{item.description}</small></button>)}</div>
-        <div className="studio-subheading"><b>Your own background image</b><small>Upload a JPG, PNG or WebP image (up to 1.5 MB). It stays on this browser.</small></div>
+        <div className="studio-subheading"><b>Your own background image</b><small>Upload a JPG, PNG or WebP image (up to 5 MB). Stored securely in your account.</small></div>
         <div className="custom-background-panel">
           {p.customBackground ? <div className="custom-background-preview" style={{backgroundImage:`url("${p.customBackground}")`}}><span>Custom image active</span></div> : <div className="custom-background-empty"><ImagePlus size={22}/><b>Make CHECKMATE yours</b><small>Choose an image from your device</small></div>}
           <div className="custom-background-actions">
-            <label className="custom-background-upload"><ImagePlus size={14}/> {p.customBackground?'Change image':'Upload image'}<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>{const file=e.target.files?.[0];if(!file)return;setBackgroundError('');if(!['image/png','image/jpeg','image/webp'].includes(file.type)){setBackgroundError('Choose a JPG, PNG or WebP image.');e.currentTarget.value='';return;}if(file.size>1.5*1024*1024){setBackgroundError('Image is too large. Maximum file size is 1.5 MB.');e.currentTarget.value='';return;}const reader=new FileReader();reader.onload=()=>{if(typeof reader.result==='string'){p.setCustomBackground(reader.result);p.setBackgroundStyle('custom');}};reader.onerror=()=>setBackgroundError('Could not read this image. Please try another file.');reader.readAsDataURL(file);e.currentTarget.value='';}}/></label>
-            {p.customBackground&&<button type="button" className="custom-background-remove" onClick={()=>{p.setCustomBackground('');p.setBackgroundStyle('aurora');setBackgroundError('');}}><Trash2 size={13}/> Remove image</button>}
+            <label className="custom-background-upload"><ImagePlus size={14}/> {p.customBackground?'Change image':'Upload image'}<input type="file" accept="image/png,image/jpeg,image/webp" disabled={!user||p.syncStatus==='saving'} onChange={async e=>{const input=e.currentTarget;const file=input.files?.[0];input.value='';if(!file)return;setBackgroundError('');try{await p.uploadCustomBackground(file);}catch(error){setBackgroundError(error instanceof Error?error.message:'Image upload failed. Please retry.');}}}/></label>
+            {p.customBackground&&<button type="button" className="custom-background-remove" disabled={!user||p.syncStatus==='saving'} onClick={async()=>{setBackgroundError('');try{await p.removeCustomBackground();}catch(error){setBackgroundError(error instanceof Error?error.message:'Could not remove the image.');}}}><Trash2 size={13}/> Remove image</button>}
           </div>
           {backgroundError&&<p className="custom-background-error" role="alert">{backgroundError}</p>}
         </div>
@@ -114,7 +121,7 @@ export default function SettingsPage() {
         <div className="studio-slider"><label htmlFor="animation-speed">Animation speed <b>{p.animationSpeed}%</b></label><input id="animation-speed" type="range" min="50" max="150" step="10" value={p.animationSpeed} disabled={!p.animationsEnabled} onChange={e=>p.setAnimationSpeed(Number(e.target.value))}/><small>Lower is slower and more relaxed; higher is faster.</small></div>
       </section>
 
-      <div className="studio-footer-actions"><p>All preferences are stored locally in this browser. They do not change another player's board or account.</p><button onClick={p.resetPreferences}><RotateCcw size={14}/> Reset every setting</button></div>
+      <div className="studio-footer-actions"><p>Preferences sync to your signed-in account. Board and appearance settings only affect your own experience.</p><button disabled={!user||p.syncStatus==='saving'} onClick={()=>{void p.resetPreferences().catch(error=>setBackgroundError(error instanceof Error?error.message:'Could not reset settings.'));}}><RotateCcw size={14}/> Reset every setting</button></div>
     </section>
   </main>;
 }
