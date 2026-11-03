@@ -175,7 +175,7 @@ export default function App() {
     setNotice('New game started. White to move.');
   }
   function startComputerGame() {
-    setGame(new Chess()); setSelected(null); setLegal([]); setFlipped(false);
+    setGame(new Chess()); setSelected(null); setLegal([]); setFlipped(boardOrientation === 'black');
     setGameMode('computer'); setAiThinking(false); setFlagged(null); setPromotionRequest(null);
     const initialSeconds = Number(timeControl.split('+')[0]) * 60;
     setWhiteTime(initialSeconds); setBlackTime(initialSeconds); setClockStarted(false);
