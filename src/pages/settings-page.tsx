@@ -108,7 +108,7 @@ export default function SettingsPage() {
         {toggle('Board coordinates','Show file letters and rank numbers',p.showCoordinates,p.setShowCoordinates,<Eye size={16}/>)}
         {toggle('Legal move hints','Show available destination squares after selecting a piece',p.showLegalMoves,p.setShowLegalMoves,<CircleHelp size={16}/>)}
         {toggle('Last move highlight','Highlight the previous move on boards that support it',p.highlightLastMove,p.setHighlightLastMove,<Sparkles size={16}/>)}
-        {toggle('Automatic queen promotion','Promote pawns to a queen without opening the piece picker',p.autoQueen,p.setAutoQueen,<Crown size={16}/>)}
+        {toggle('Automatic queen promotion','On the homepage practice board, choose a queen without opening the piece picker',p.autoQueen,p.setAutoQueen,<Crown size={16}/>)}
         {toggle('High-contrast board','Increase square and move-marker contrast for visibility',p.highContrast,p.setHighContrast,<Eye size={16}/>)}
         <div className="studio-subheading"><b>Default board orientation</b><small>Homepage practice board: which side should appear at the bottom?</small></div>
         <div className="orientation-options"><button className={p.boardOrientation==='white'?'active':''} onClick={()=>p.setBoardOrientation('white')}>♙ White at bottom</button><button className={p.boardOrientation==='black'?'active':''} onClick={()=>p.setBoardOrientation('black')}>♟ Black at bottom</button></div>
