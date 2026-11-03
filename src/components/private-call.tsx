@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Camera, CameraOff, Mic, MicOff, Phone, PhoneOff, Video } from 'lucide-react';
 import type { Socket } from 'socket.io-client';
+import { getIceServers } from '../lib/ice-servers';
 
 type Props = { socket: Socket | null; gameId: string };
 
@@ -13,6 +14,7 @@ export default function PrivateCall({ socket, gameId }: Props) {
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
+  const iceServersRef = useRef<RTCIceServer[]>([{ urls: 'stun:stun.l.google.com:19302' }]);
   const localStreamRef = useRef<MediaStream | null>(null);
   const initiatorRef = useRef(false);
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -34,15 +36,7 @@ export default function PrivateCall({ socket, gameId }: Props) {
   function createPeer() {
     if (!socket || !localStreamRef.current) throw new Error('Call media is not ready.');
     if (pcRef.current) return pcRef.current;
-    const iceServers: RTCIceServer[] = [{ urls: 'stun:stun.l.google.com:19302' }];
-    if (import.meta.env.VITE_TURN_URL && import.meta.env.VITE_TURN_USERNAME && import.meta.env.VITE_TURN_CREDENTIAL) {
-      iceServers.push({
-        urls: import.meta.env.VITE_TURN_URL,
-        username: import.meta.env.VITE_TURN_USERNAME,
-        credential: import.meta.env.VITE_TURN_CREDENTIAL,
-      });
-    }
-    const peer = new RTCPeerConnection({ iceServers });
+    const peer = new RTCPeerConnection({ iceServers: iceServersRef.current });
     localStreamRef.current.getTracks().forEach(track => peer.addTrack(track, localStreamRef.current!));
     peer.onicecandidate = event => {
       if (event.candidate) socket.emit('call:signal', { gameId, signal: { candidate: event.candidate.toJSON() } });
@@ -64,6 +58,8 @@ export default function PrivateCall({ socket, gameId }: Props) {
       setStatus('Requesting microphone permission…');
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: withVideo });
       localStreamRef.current = stream;
+      try { iceServersRef.current = await getIceServers(); }
+      catch { iceServersRef.current = [{ urls: 'stun:stun.l.google.com:19302' }]; }
       setLocalStream(stream);
       setVideoMode(withVideo);
       setMicEnabled(true);
