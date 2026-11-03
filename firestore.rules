@@ -33,6 +33,685 @@ service cloud.firestore {
           'displayName', 'photoURL', 'updatedAt'
         ]);
       allow delete: if false;
+
+      match /settings/{settingId} {
+        allow read: if ownsPlayer(uid);
+        allow create, update: if ownsPlayer(uid)
+          && settingId == 'preferences'
+          && request.resource.data.keys().hasOnly([
+            'appearance', 'boardTheme', 'pieceSet', 'soundEnabled', 'soundVolume',
+            'animationsEnabled', 'animationSpeed', 'showCoordinates', 'showLegalMoves',
+            'highlightLastMove', 'compactMode', 'boardOrientation', 'showMoveList',
+            'backgroundStyle', 'customBackgroundUrl', 'customBackgroundPath', 'accentColor',
+            'customBoardColors', 'boardLightColor', 'boardDarkColor', 'pieceScale',
+            'boardCorners', 'updatedAt'
+          ])
+          && request.resource.data.appearance in ['dark', 'light', 'system']
+          && request.resource.data.boardOrientation in ['white', 'black']
+          && request.resource.data.backgroundStyle in ['aurora', 'midnight', 'forest', 'plain', 'custom']
+          && request.resource.data.soundEnabled is bool
+          && request.resource.data.animationsEnabled is bool
+          && request.resource.data.showCoordinates is bool
+          && request.resource.data.showLegalMoves is bool
+          && request.resource.data.highlightLastMove is bool
+          && request.resource.data.compactMode is bool
+          && request.resource.data.showMoveList is bool
+          && request.resource.data.customBoardColors is bool
+          && request.resource.data.soundVolume is number
+          && request.resource.data.soundVolume >= 0 && request.resource.data.soundVolume <= 100
+          && request.resource.data.animationSpeed is number
+          && request.resource.data.animationSpeed >= 50 && request.resource.data.animationSpeed <= 150
+          && request.resource.data.pieceScale is number
+          && request.resource.data.pieceScale >= 80 && request.resource.data.pieceScale <= 120
+          && request.resource.data.boardCorners is number
+          && request.resource.data.boardCorners >= 0 && request.resource.data.boardCorners <= 24
+          && request.resource.data.accentColor.matches('^#[0-9a-fA-F]{6}
+      allow read: if signedIn();
+      allow create: if ownsPlayer(uid)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 2
+        && request.resource.data.displayName.size() <= 30
+        && request.resource.data.keys().hasOnly([
+          'uid', 'displayName', 'photoURL', 'createdAt', 'updatedAt'
+        ]);
+      allow update: if ownsPlayer(uid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 2
+        && request.resource.data.displayName.size() <= 30
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'displayName', 'photoURL', 'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    match /friendRequests/{requestId} {
+      allow read: if signedIn()
+        && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.toUid is string
+        && request.resource.data.toUid != request.auth.uid
+        && exists(/databases/$(database)/documents/publicProfiles/$(request.resource.data.toUid))
+        && request.resource.data.status == 'pending'
+        && request.resource.data.keys().hasOnly([
+          'fromUid', 'toUid', 'status', 'createdAt', 'updatedAt'
+        ]);
+      allow update: if signedIn()
+        && resource.data.toUid == request.auth.uid
+        && resource.data.status == 'pending'
+        && request.resource.data.status in ['accepted', 'rejected']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']);
+      allow delete: if signedIn()
+        && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid)
+        && (resource.data.status == 'rejected'
+          || (resource.data.status == 'accepted'
+            && !existsAfter(/databases/$(database)/documents/friends/$(requestId))));
+    }
+
+    match /friends/{friendId} {
+      allow read: if isMember(resource.data.members);
+      allow create: if signedIn()
+        && request.resource.data.members is list
+        && request.resource.data.members.size() == 2
+        && isMember(request.resource.data.members)
+        && request.resource.data.requestId == friendId
+        && request.resource.data.keys().hasOnly(['members', 'requestId', 'createdAt'])
+        && getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.status == 'accepted'
+        && getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.fromUid in request.resource.data.members
+        && getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.toUid in request.resource.data.members;
+      allow update: if false;
+      allow delete: if isMember(resource.data.members);
+    }
+
+    match /conversations/{conversationId} {
+      allow read: if isMember(resource.data.members)
+        && exists(/databases/$(database)/documents/friends/$(conversationId));
+      allow create: if isMember(request.resource.data.members)
+        && request.resource.data.members is list
+        && request.resource.data.members.size() == 2
+        && exists(/databases/$(database)/documents/friends/$(conversationId))
+        && get(/databases/$(database)/documents/friends/$(conversationId)).data.members == request.resource.data.members
+        && request.resource.data.keys().hasOnly([
+          'members', 'createdAt', 'updatedAt', 'lastMessage', 'lastMessageAt'
+        ]);
+      allow update: if isMember(resource.data.members)
+        && exists(/databases/$(database)/documents/friends/$(conversationId))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'lastMessage', 'lastMessageAt', 'updatedAt'
+        ]);
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        function conversationMember() {
+          return signedIn()
+            && exists(/databases/$(database)/documents/conversations/$(conversationId))
+            && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.members
+            && exists(/databases/$(database)/documents/friends/$(conversationId));
+        }
+        allow read: if conversationMember();
+        allow create: if conversationMember()
+          && request.resource.data.senderUid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 2000
+          && request.resource.data.keys().hasOnly(['senderUid', 'text', 'createdAt'])
+          && request.resource.data.createdAt == request.time;
+        allow update, delete: if false;
+      }
+    }
+
+    match /tournaments/{tournamentId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.status == 'open'
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 3
+        && request.resource.data.name.size() <= 60
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 300
+        && request.resource.data.format in ['Arena', 'Swiss', 'Round robin', 'Knockout']
+        && request.resource.data.timeControl in ['3+0', '5+0', '10+0', '15+10', '30+0']
+        && request.resource.data.startsAt is timestamp
+        && request.resource.data.capacity is int
+        && request.resource.data.capacity >= 2
+        && request.resource.data.capacity <= 256
+        && request.resource.data.keys().hasOnly([
+          'name', 'description', 'format', 'timeControl', 'capacity',
+          'startsAt', 'status', 'createdBy', 'createdAt'
+        ]);
+      allow update: if signedIn()
+        && resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 3
+        && request.resource.data.name.size() <= 60
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 300
+        && request.resource.data.format in ['Arena', 'Swiss', 'Round robin', 'Knockout']
+        && request.resource.data.timeControl in ['3+0', '5+0', '10+0', '15+10', '30+0']
+        && request.resource.data.capacity is int
+        && request.resource.data.capacity >= 2
+        && request.resource.data.capacity <= 256
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'description', 'format', 'timeControl', 'capacity', 'startsAt', 'status'
+        ]);
+      allow delete: if signedIn() && resource.data.createdBy == request.auth.uid;
+
+      match /participants/{uid} {
+        allow read: if signedIn();
+        allow create: if ownsPlayer(uid)
+          && request.resource.data.uid == request.auth.uid
+          && get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.status == 'open'
+          && request.resource.data.keys().hasOnly(['uid', 'displayName', 'joinedAt']);
+        allow delete: if ownsPlayer(uid);
+        allow update: if false;
+      }
+    }
+
+    match /games/{gameId} {
+      allow read: if signedIn()
+        && (resource.data.whiteUid == request.auth.uid
+          || resource.data.blackUid == request.auth.uid);
+      // Only the trusted realtime server (Firebase Admin SDK) writes game records.
+      allow create, update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+)
+          && request.resource.data.boardLightColor.matches('^#[0-9a-fA-F]{6}
+      allow read: if signedIn();
+      allow create: if ownsPlayer(uid)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 2
+        && request.resource.data.displayName.size() <= 30
+        && request.resource.data.keys().hasOnly([
+          'uid', 'displayName', 'photoURL', 'createdAt', 'updatedAt'
+        ]);
+      allow update: if ownsPlayer(uid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 2
+        && request.resource.data.displayName.size() <= 30
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'displayName', 'photoURL', 'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    match /friendRequests/{requestId} {
+      allow read: if signedIn()
+        && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.toUid is string
+        && request.resource.data.toUid != request.auth.uid
+        && exists(/databases/$(database)/documents/publicProfiles/$(request.resource.data.toUid))
+        && request.resource.data.status == 'pending'
+        && request.resource.data.keys().hasOnly([
+          'fromUid', 'toUid', 'status', 'createdAt', 'updatedAt'
+        ]);
+      allow update: if signedIn()
+        && resource.data.toUid == request.auth.uid
+        && resource.data.status == 'pending'
+        && request.resource.data.status in ['accepted', 'rejected']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']);
+      allow delete: if signedIn()
+        && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid)
+        && (resource.data.status == 'rejected'
+          || (resource.data.status == 'accepted'
+            && !existsAfter(/databases/$(database)/documents/friends/$(requestId))));
+    }
+
+    match /friends/{friendId} {
+      allow read: if isMember(resource.data.members);
+      allow create: if signedIn()
+        && request.resource.data.members is list
+        && request.resource.data.members.size() == 2
+        && isMember(request.resource.data.members)
+        && request.resource.data.requestId == friendId
+        && request.resource.data.keys().hasOnly(['members', 'requestId', 'createdAt'])
+        && getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.status == 'accepted'
+        && getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.fromUid in request.resource.data.members
+        && getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.toUid in request.resource.data.members;
+      allow update: if false;
+      allow delete: if isMember(resource.data.members);
+    }
+
+    match /conversations/{conversationId} {
+      allow read: if isMember(resource.data.members)
+        && exists(/databases/$(database)/documents/friends/$(conversationId));
+      allow create: if isMember(request.resource.data.members)
+        && request.resource.data.members is list
+        && request.resource.data.members.size() == 2
+        && exists(/databases/$(database)/documents/friends/$(conversationId))
+        && get(/databases/$(database)/documents/friends/$(conversationId)).data.members == request.resource.data.members
+        && request.resource.data.keys().hasOnly([
+          'members', 'createdAt', 'updatedAt', 'lastMessage', 'lastMessageAt'
+        ]);
+      allow update: if isMember(resource.data.members)
+        && exists(/databases/$(database)/documents/friends/$(conversationId))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'lastMessage', 'lastMessageAt', 'updatedAt'
+        ]);
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        function conversationMember() {
+          return signedIn()
+            && exists(/databases/$(database)/documents/conversations/$(conversationId))
+            && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.members
+            && exists(/databases/$(database)/documents/friends/$(conversationId));
+        }
+        allow read: if conversationMember();
+        allow create: if conversationMember()
+          && request.resource.data.senderUid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 2000
+          && request.resource.data.keys().hasOnly(['senderUid', 'text', 'createdAt'])
+          && request.resource.data.createdAt == request.time;
+        allow update, delete: if false;
+      }
+    }
+
+    match /tournaments/{tournamentId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.status == 'open'
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 3
+        && request.resource.data.name.size() <= 60
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 300
+        && request.resource.data.format in ['Arena', 'Swiss', 'Round robin', 'Knockout']
+        && request.resource.data.timeControl in ['3+0', '5+0', '10+0', '15+10', '30+0']
+        && request.resource.data.startsAt is timestamp
+        && request.resource.data.capacity is int
+        && request.resource.data.capacity >= 2
+        && request.resource.data.capacity <= 256
+        && request.resource.data.keys().hasOnly([
+          'name', 'description', 'format', 'timeControl', 'capacity',
+          'startsAt', 'status', 'createdBy', 'createdAt'
+        ]);
+      allow update: if signedIn()
+        && resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 3
+        && request.resource.data.name.size() <= 60
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 300
+        && request.resource.data.format in ['Arena', 'Swiss', 'Round robin', 'Knockout']
+        && request.resource.data.timeControl in ['3+0', '5+0', '10+0', '15+10', '30+0']
+        && request.resource.data.capacity is int
+        && request.resource.data.capacity >= 2
+        && request.resource.data.capacity <= 256
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'description', 'format', 'timeControl', 'capacity', 'startsAt', 'status'
+        ]);
+      allow delete: if signedIn() && resource.data.createdBy == request.auth.uid;
+
+      match /participants/{uid} {
+        allow read: if signedIn();
+        allow create: if ownsPlayer(uid)
+          && request.resource.data.uid == request.auth.uid
+          && get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.status == 'open'
+          && request.resource.data.keys().hasOnly(['uid', 'displayName', 'joinedAt']);
+        allow delete: if ownsPlayer(uid);
+        allow update: if false;
+      }
+    }
+
+    match /games/{gameId} {
+      allow read: if signedIn()
+        && (resource.data.whiteUid == request.auth.uid
+          || resource.data.blackUid == request.auth.uid);
+      // Only the trusted realtime server (Firebase Admin SDK) writes game records.
+      allow create, update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+)
+          && request.resource.data.boardDarkColor.matches('^#[0-9a-fA-F]{6}
+      allow read: if signedIn();
+      allow create: if ownsPlayer(uid)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 2
+        && request.resource.data.displayName.size() <= 30
+        && request.resource.data.keys().hasOnly([
+          'uid', 'displayName', 'photoURL', 'createdAt', 'updatedAt'
+        ]);
+      allow update: if ownsPlayer(uid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 2
+        && request.resource.data.displayName.size() <= 30
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'displayName', 'photoURL', 'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    match /friendRequests/{requestId} {
+      allow read: if signedIn()
+        && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.toUid is string
+        && request.resource.data.toUid != request.auth.uid
+        && exists(/databases/$(database)/documents/publicProfiles/$(request.resource.data.toUid))
+        && request.resource.data.status == 'pending'
+        && request.resource.data.keys().hasOnly([
+          'fromUid', 'toUid', 'status', 'createdAt', 'updatedAt'
+        ]);
+      allow update: if signedIn()
+        && resource.data.toUid == request.auth.uid
+        && resource.data.status == 'pending'
+        && request.resource.data.status in ['accepted', 'rejected']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']);
+      allow delete: if signedIn()
+        && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid)
+        && (resource.data.status == 'rejected'
+          || (resource.data.status == 'accepted'
+            && !existsAfter(/databases/$(database)/documents/friends/$(requestId))));
+    }
+
+    match /friends/{friendId} {
+      allow read: if isMember(resource.data.members);
+      allow create: if signedIn()
+        && request.resource.data.members is list
+        && request.resource.data.members.size() == 2
+        && isMember(request.resource.data.members)
+        && request.resource.data.requestId == friendId
+        && request.resource.data.keys().hasOnly(['members', 'requestId', 'createdAt'])
+        && getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.status == 'accepted'
+        && getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.fromUid in request.resource.data.members
+        && getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.toUid in request.resource.data.members;
+      allow update: if false;
+      allow delete: if isMember(resource.data.members);
+    }
+
+    match /conversations/{conversationId} {
+      allow read: if isMember(resource.data.members)
+        && exists(/databases/$(database)/documents/friends/$(conversationId));
+      allow create: if isMember(request.resource.data.members)
+        && request.resource.data.members is list
+        && request.resource.data.members.size() == 2
+        && exists(/databases/$(database)/documents/friends/$(conversationId))
+        && get(/databases/$(database)/documents/friends/$(conversationId)).data.members == request.resource.data.members
+        && request.resource.data.keys().hasOnly([
+          'members', 'createdAt', 'updatedAt', 'lastMessage', 'lastMessageAt'
+        ]);
+      allow update: if isMember(resource.data.members)
+        && exists(/databases/$(database)/documents/friends/$(conversationId))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'lastMessage', 'lastMessageAt', 'updatedAt'
+        ]);
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        function conversationMember() {
+          return signedIn()
+            && exists(/databases/$(database)/documents/conversations/$(conversationId))
+            && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.members
+            && exists(/databases/$(database)/documents/friends/$(conversationId));
+        }
+        allow read: if conversationMember();
+        allow create: if conversationMember()
+          && request.resource.data.senderUid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 2000
+          && request.resource.data.keys().hasOnly(['senderUid', 'text', 'createdAt'])
+          && request.resource.data.createdAt == request.time;
+        allow update, delete: if false;
+      }
+    }
+
+    match /tournaments/{tournamentId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.status == 'open'
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 3
+        && request.resource.data.name.size() <= 60
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 300
+        && request.resource.data.format in ['Arena', 'Swiss', 'Round robin', 'Knockout']
+        && request.resource.data.timeControl in ['3+0', '5+0', '10+0', '15+10', '30+0']
+        && request.resource.data.startsAt is timestamp
+        && request.resource.data.capacity is int
+        && request.resource.data.capacity >= 2
+        && request.resource.data.capacity <= 256
+        && request.resource.data.keys().hasOnly([
+          'name', 'description', 'format', 'timeControl', 'capacity',
+          'startsAt', 'status', 'createdBy', 'createdAt'
+        ]);
+      allow update: if signedIn()
+        && resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 3
+        && request.resource.data.name.size() <= 60
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 300
+        && request.resource.data.format in ['Arena', 'Swiss', 'Round robin', 'Knockout']
+        && request.resource.data.timeControl in ['3+0', '5+0', '10+0', '15+10', '30+0']
+        && request.resource.data.capacity is int
+        && request.resource.data.capacity >= 2
+        && request.resource.data.capacity <= 256
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'description', 'format', 'timeControl', 'capacity', 'startsAt', 'status'
+        ]);
+      allow delete: if signedIn() && resource.data.createdBy == request.auth.uid;
+
+      match /participants/{uid} {
+        allow read: if signedIn();
+        allow create: if ownsPlayer(uid)
+          && request.resource.data.uid == request.auth.uid
+          && get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.status == 'open'
+          && request.resource.data.keys().hasOnly(['uid', 'displayName', 'joinedAt']);
+        allow delete: if ownsPlayer(uid);
+        allow update: if false;
+      }
+    }
+
+    match /games/{gameId} {
+      allow read: if signedIn()
+        && (resource.data.whiteUid == request.auth.uid
+          || resource.data.blackUid == request.auth.uid);
+      // Only the trusted realtime server (Firebase Admin SDK) writes game records.
+      allow create, update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+)
+          && request.resource.data.customBackgroundUrl is string
+          && request.resource.data.customBackgroundUrl.size() <= 2048
+          && request.resource.data.customBackgroundPath is string
+          && request.resource.data.customBackgroundPath.size() <= 300
+          && (request.resource.data.customBackgroundPath == ''
+            || request.resource.data.customBackgroundPath.matches('^players/' + uid + '/backgrounds/[^/]+
+      allow read: if signedIn();
+      allow create: if ownsPlayer(uid)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 2
+        && request.resource.data.displayName.size() <= 30
+        && request.resource.data.keys().hasOnly([
+          'uid', 'displayName', 'photoURL', 'createdAt', 'updatedAt'
+        ]);
+      allow update: if ownsPlayer(uid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 2
+        && request.resource.data.displayName.size() <= 30
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'displayName', 'photoURL', 'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    match /friendRequests/{requestId} {
+      allow read: if signedIn()
+        && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.toUid is string
+        && request.resource.data.toUid != request.auth.uid
+        && exists(/databases/$(database)/documents/publicProfiles/$(request.resource.data.toUid))
+        && request.resource.data.status == 'pending'
+        && request.resource.data.keys().hasOnly([
+          'fromUid', 'toUid', 'status', 'createdAt', 'updatedAt'
+        ]);
+      allow update: if signedIn()
+        && resource.data.toUid == request.auth.uid
+        && resource.data.status == 'pending'
+        && request.resource.data.status in ['accepted', 'rejected']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']);
+      allow delete: if signedIn()
+        && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid)
+        && (resource.data.status == 'rejected'
+          || (resource.data.status == 'accepted'
+            && !existsAfter(/databases/$(database)/documents/friends/$(requestId))));
+    }
+
+    match /friends/{friendId} {
+      allow read: if isMember(resource.data.members);
+      allow create: if signedIn()
+        && request.resource.data.members is list
+        && request.resource.data.members.size() == 2
+        && isMember(request.resource.data.members)
+        && request.resource.data.requestId == friendId
+        && request.resource.data.keys().hasOnly(['members', 'requestId', 'createdAt'])
+        && getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.status == 'accepted'
+        && getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.fromUid in request.resource.data.members
+        && getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.toUid in request.resource.data.members;
+      allow update: if false;
+      allow delete: if isMember(resource.data.members);
+    }
+
+    match /conversations/{conversationId} {
+      allow read: if isMember(resource.data.members)
+        && exists(/databases/$(database)/documents/friends/$(conversationId));
+      allow create: if isMember(request.resource.data.members)
+        && request.resource.data.members is list
+        && request.resource.data.members.size() == 2
+        && exists(/databases/$(database)/documents/friends/$(conversationId))
+        && get(/databases/$(database)/documents/friends/$(conversationId)).data.members == request.resource.data.members
+        && request.resource.data.keys().hasOnly([
+          'members', 'createdAt', 'updatedAt', 'lastMessage', 'lastMessageAt'
+        ]);
+      allow update: if isMember(resource.data.members)
+        && exists(/databases/$(database)/documents/friends/$(conversationId))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'lastMessage', 'lastMessageAt', 'updatedAt'
+        ]);
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        function conversationMember() {
+          return signedIn()
+            && exists(/databases/$(database)/documents/conversations/$(conversationId))
+            && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.members
+            && exists(/databases/$(database)/documents/friends/$(conversationId));
+        }
+        allow read: if conversationMember();
+        allow create: if conversationMember()
+          && request.resource.data.senderUid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 2000
+          && request.resource.data.keys().hasOnly(['senderUid', 'text', 'createdAt'])
+          && request.resource.data.createdAt == request.time;
+        allow update, delete: if false;
+      }
+    }
+
+    match /tournaments/{tournamentId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.status == 'open'
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 3
+        && request.resource.data.name.size() <= 60
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 300
+        && request.resource.data.format in ['Arena', 'Swiss', 'Round robin', 'Knockout']
+        && request.resource.data.timeControl in ['3+0', '5+0', '10+0', '15+10', '30+0']
+        && request.resource.data.startsAt is timestamp
+        && request.resource.data.capacity is int
+        && request.resource.data.capacity >= 2
+        && request.resource.data.capacity <= 256
+        && request.resource.data.keys().hasOnly([
+          'name', 'description', 'format', 'timeControl', 'capacity',
+          'startsAt', 'status', 'createdBy', 'createdAt'
+        ]);
+      allow update: if signedIn()
+        && resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 3
+        && request.resource.data.name.size() <= 60
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 300
+        && request.resource.data.format in ['Arena', 'Swiss', 'Round robin', 'Knockout']
+        && request.resource.data.timeControl in ['3+0', '5+0', '10+0', '15+10', '30+0']
+        && request.resource.data.capacity is int
+        && request.resource.data.capacity >= 2
+        && request.resource.data.capacity <= 256
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'description', 'format', 'timeControl', 'capacity', 'startsAt', 'status'
+        ]);
+      allow delete: if signedIn() && resource.data.createdBy == request.auth.uid;
+
+      match /participants/{uid} {
+        allow read: if signedIn();
+        allow create: if ownsPlayer(uid)
+          && request.resource.data.uid == request.auth.uid
+          && get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.status == 'open'
+          && request.resource.data.keys().hasOnly(['uid', 'displayName', 'joinedAt']);
+        allow delete: if ownsPlayer(uid);
+        allow update: if false;
+      }
+    }
+
+    match /games/{gameId} {
+      allow read: if signedIn()
+        && (resource.data.whiteUid == request.auth.uid
+          || resource.data.blackUid == request.auth.uid);
+      // Only the trusted realtime server (Firebase Admin SDK) writes game records.
+      allow create, update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+));
+        allow delete: if false;
+      }
     }
 
     match /publicProfiles/{uid} {
