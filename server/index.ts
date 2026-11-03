@@ -46,7 +46,7 @@ const firebaseAuth = getAuth(adminApp);
 
 const games = new Map<string, GameRoom>();
 const queues = new Map<TimeControl, string>();
-const privateInvites = new Map<string, { socketId: string; timeControl: TimeControl }>();
+const privateInvites = new Map<string, { socketId: string; timeControl: TimeControl; expiresAt: number }>();
 const disconnectTimers = new Map<string, NodeJS.Timeout>();
 const validControls: TimeControl[] = ['3+0', '5+0', '10+0', '15+10', '30+0'];
 
@@ -137,7 +137,7 @@ io.on('connection', (socket: PlayerSocket) => {
   socket.on('private:create', (payload: { timeControl?: unknown } = {}) => {
     const control = validTimeControl(payload.timeControl) ? payload.timeControl : '10+0';
     const code = randomBytes(4).toString('hex').toUpperCase();
-    privateInvites.set(code, { socketId: socket.id, timeControl: control });
+    privateInvites.set(code, { socketId: socket.id, timeControl: control, expiresAt: Date.now() + 10 * 60_000 });
     socket.emit('private:created', { code, timeControl: control });
   });
 
@@ -145,7 +145,10 @@ io.on('connection', (socket: PlayerSocket) => {
     const code = typeof payload.code === 'string' ? payload.code.trim().toUpperCase() : '';
     const invite = privateInvites.get(code);
     const host = invite ? io.sockets.sockets.get(invite.socketId) : undefined;
-    if (!invite || !host?.connected) return sendError(socket, 'That private game code is invalid or expired.');
+    if (!invite || invite.expiresAt < Date.now() || !host?.connected) {
+      privateInvites.delete(code);
+      return sendError(socket, 'That private game code is invalid or expired.');
+    }
     if (host.data.uid === socket.data.uid) return sendError(socket, 'You cannot join your own invitation.');
     privateInvites.delete(code);
     emitGameStart(host, socket, invite.timeControl, code);
