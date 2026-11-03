@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  addDoc, collection, deleteDoc, doc, getDoc, limit, onSnapshot, orderBy,
+  addDoc, collection, doc, getDoc, limit, onSnapshot, orderBy,
   query, serverTimestamp, setDoc, updateDoc, where, writeBatch,
 } from 'firebase/firestore';
 import { ArrowLeft, Check, Copy, MessageCircle, Send, UserPlus, Users, X } from 'lucide-react';
@@ -136,7 +136,10 @@ export default function CommunityPage() {
     if (!db || !user) return;
     if (!window.confirm('Remove this player from your friends?')) return;
     try {
-      await deleteDoc(doc(db, 'friends', friend.id));
+      const batch = writeBatch(db);
+      batch.delete(doc(db, 'friends', friend.id));
+      batch.delete(doc(db, 'friendRequests', friend.requestId));
+      await batch.commit();
       if (selectedFriend && friend.members.includes(selectedFriend.uid)) setSelectedFriend(null);
       setNotice('Friend removed.');
     } catch (err) { setError(err instanceof Error ? err.message : 'Could not remove this friend.'); }
