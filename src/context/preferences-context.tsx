@@ -67,6 +67,6 @@ export function usePreferences() {
 }
 
 export function ThemeFrame({ children }: { children: ReactNode }) {
-  const { isDark } = usePreferences();
-  return <div className={isDark ? 'theme-root' : 'theme-root light'}>{children}</div>;
+  const { isDark, animationsEnabled } = usePreferences();
+  return <div className={`theme-root ${isDark ? '' : 'light'} ${animationsEnabled ? '' : 'motion-off'}`}>{children}</div>;
 }
