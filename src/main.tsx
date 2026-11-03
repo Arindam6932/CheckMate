@@ -7,12 +7,14 @@ import AuthPage from './pages/auth-page';
 import ProfilePage from './pages/profile-page';
 import OnlinePlayPage from './pages/online-play-page';
 import GameHistoryPage from './pages/game-history-page';
+import CommunityPage from './pages/community-page';
 import './styles.css';
 import './pages/auth-page.css';
 import './pages/profile-page.css';
 import './pages/online-play-page.css';
 import './pages/game-history-page.css';
 import './components/private-call.css';
+import './pages/community-page.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -24,6 +26,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/play-online" element={<OnlinePlayPage />} />
           <Route path="/history" element={<GameHistoryPage />} />
+          <Route path="/community" element={<CommunityPage />} />
           <Route path="*" element={<App />} />
         </Routes>
       </AuthProvider>
