@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import {
   ArrowLeft, Check, ChevronRight, CircleHelp, Contrast, Eye, Gamepad2, Headphones,
