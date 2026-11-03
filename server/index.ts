@@ -7,6 +7,7 @@ import { Chess, type Square } from 'chess.js';
 import { Server, type Socket } from 'socket.io';
 import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
 
 type PlayerSocket = Socket;
 type TimeControl = '3+0' | '5+0' | '10+0' | '15+10' | '30+0';
@@ -43,6 +44,7 @@ const adminApp = getApps()[0] || initializeApp({
   projectId: process.env.FIREBASE_PROJECT_ID,
 });
 const firebaseAuth = getAuth(adminApp);
+const firestore = getFirestore(adminApp);
 
 const games = new Map<string, GameRoom>();
 const queues = new Map<TimeControl, string>();
@@ -96,6 +98,26 @@ function getPlayerColor(room: GameRoom, uid: string): 'w' | 'b' | null {
 
 function sendError(socket: PlayerSocket, message: string) {
   socket.emit('game:error', { message });
+}
+
+async function persistGame(room: GameRoom, result: string, reason: string) {
+  try {
+    await firestore.collection('games').doc(room.id).set({
+      gameId: room.id,
+      whiteUid: room.whiteUid,
+      blackUid: room.blackUid,
+      timeControl: room.timeControl,
+      result,
+      reason,
+      pgn: room.chess.pgn(),
+      finalFen: room.chess.fen(),
+      moveCount: room.chess.history().length,
+      startedAt: Timestamp.fromMillis(room.createdAt),
+      finishedAt: FieldValue.serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Could not persist completed game:', error);
+  }
 }
 
 io.use(async (socket, next) => {
@@ -170,6 +192,7 @@ io.on('connection', (socket: PlayerSocket) => {
     if (remainingAfterElapsed <= 0) {
       if (color === 'w') room.whiteTimeMs = 0; else room.blackTimeMs = 0;
       room.status = 'finished';
+      void persistGame(room, color === 'w' ? 'black-wins' : 'white-wins', 'timeout');
       io.to(room.id).emit('game:ended', {
         result: color === 'w' ? 'black-wins' : 'white-wins',
         reason: 'timeout',
@@ -192,7 +215,11 @@ io.on('connection', (socket: PlayerSocket) => {
       if (color === 'w') room.whiteTimeMs = remainingAfterElapsed + room.incrementMs;
       else room.blackTimeMs = remainingAfterElapsed + room.incrementMs;
       room.lastMoveAt = Date.now();
-      if (room.chess.isGameOver()) room.status = 'finished';
+      if (room.chess.isGameOver()) {
+        room.status = 'finished';
+        const result = room.chess.isDraw() ? 'draw' : color === 'w' ? 'white-wins' : 'black-wins';
+        void persistGame(room, result, room.chess.isCheckmate() ? 'checkmate' : 'draw');
+      }
       io.to(gameId).emit('game:state', {
         gameId,
         fen: room.chess.fen(),
@@ -260,6 +287,7 @@ io.on('connection', (socket: PlayerSocket) => {
       return sendError(socket, 'There is no draw offer to accept.');
     }
     room.status = 'finished';
+    void persistGame(room, 'draw', 'agreement');
     io.to(room.id).emit('game:ended', { result: 'draw', reason: 'agreement', pgn: room.chess.pgn() });
   });
 
@@ -269,6 +297,7 @@ io.on('connection', (socket: PlayerSocket) => {
     const color = room ? getPlayerColor(room, uid) : null;
     if (!room || room.status !== 'active' || !color) return sendError(socket, 'Cannot resign from this game.');
     room.status = 'finished';
+    void persistGame(room, color === 'w' ? 'black-wins' : 'white-wins', 'resignation');
     io.to(room.id).emit('game:ended', {
       result: color === 'w' ? 'black-wins' : 'white-wins',
       reason: 'resignation',
@@ -296,6 +325,7 @@ io.on('connection', (socket: PlayerSocket) => {
           room.status = 'finished';
           const disconnected = [...room.disconnectedUids];
           const result = disconnected.length > 1 ? 'draw' : disconnected[0] === room.whiteUid ? 'black-wins' : 'white-wins';
+          void persistGame(room, result, 'disconnect-timeout');
           io.to(room.id).emit('game:ended', { result, reason: 'disconnect-timeout', pgn: room.chess.pgn() });
           disconnectTimers.delete(room.id);
         }, 60_000);
