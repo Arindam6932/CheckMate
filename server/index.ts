@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { createServer } from 'node:http';
-import { randomBytes, randomUUID } from 'node:crypto';
+import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import express from 'express';
 import cors from 'cors';
 import { Chess, type Square } from 'chess.js';
@@ -367,6 +367,28 @@ io.on('connection', (socket: PlayerSocket) => {
       }
     }
   });
+});
+
+app.get('/ice-servers', async (request, response) => {
+  const authorization = request.header('authorization') || '';
+  const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
+  if (!token) return response.status(401).json({ error: 'Authentication required.' });
+  try {
+    const decoded = await firebaseAuth.verifyIdToken(token);
+    if (decoded.email_verified !== true) return response.status(403).json({ error: 'Verified email required.' });
+    const iceServers: Array<Record<string, unknown>> = [{ urls: 'stun:stun.l.google.com:19302' }];
+    const turnUrl = process.env.TURN_URL;
+    const sharedSecret = process.env.TURN_SHARED_SECRET;
+    if (turnUrl && sharedSecret) {
+      const expiry = Math.floor(Date.now() / 1000) + 60 * 60;
+      const username = `${expiry}:${decoded.uid}`;
+      const credential = createHmac('sha1', sharedSecret).update(username).digest('base64');
+      iceServers.push({ urls: turnUrl.split(',').map(value => value.trim()), username, credential });
+    }
+    response.json({ iceServers, expiresIn: 3600 });
+  } catch {
+    response.status(401).json({ error: 'Invalid or expired account session.' });
+  }
 });
 
 app.get('/health', (_request, response) => {
