@@ -40,7 +40,7 @@ export default function OnlinePlayPage() {
       socket.on('queue:waiting', () => setStatus('Searching for an opponent…'));
       socket.on('queue:left', () => setStatus('Matchmaking cancelled.'));
       socket.on('match:found', (data: MatchInfo & { fen: string }) => {
-        setMatch(data); setGame(new Chess(data.fen)); setSelected(null); setLegal([]);
+        setMatch(data); setBusy(false); setGame(new Chess(data.fen)); setSelected(null); setLegal([]);
         setStatus(data.color === 'w' ? 'You are playing White.' : 'You are playing Black.');
       });
       socket.on('game:state', (data: { fen: string; pgn: string; check: boolean; checkmate: boolean; draw: boolean; gameOver: boolean }) => {
@@ -124,7 +124,7 @@ export default function OnlinePlayPage() {
           <button className="online-secondary" onClick={createPrivate} disabled={!connected}><Users size={16}/> Create private game</button>
           {inviteCode && <div className="invite-code"><span>INVITATION CODE</span><b>{inviteCode}</b><button onClick={()=>void navigator.clipboard?.writeText(inviteCode)} aria-label="Copy invitation code"><Copy size={15}/></button></div>}
           <div className="join-private"><input value={joinCode} onChange={e=>setJoinCode(e.target.value.toUpperCase())} placeholder="Enter friend's code" maxLength={8}/><button onClick={joinPrivate} disabled={!connected}>Join</button></div>
-        </> : <><div className="online-match-found"><span>♟</span><div><b>Match found</b><small>Game ID {match.gameId.slice(0,8)}</small></div></div><button className="online-secondary" onClick={()=>{setMatch(null);setBusy(false);setStatus('Find another opponent.')}}><LogOut size={15}/> Leave board</button></>}
+        </> : <><div className="online-match-found"><span>♟</span><div><b>Match found</b><small>Game ID {match.gameId.slice(0,8)}</small></div></div><button className="online-secondary" onClick={()=>{socketRef.current?.emit('game:resign',{gameId:match.gameId});setMatch(null);setBusy(false);setStatus('You left the game.')}}><LogOut size={15}/> Resign & leave</button></>}
         <div className="online-security"><ShieldCheckIcon/> Only authenticated players can join active game rooms. Spectator access is not enabled in this build.</div>
       </aside>
     </div>
