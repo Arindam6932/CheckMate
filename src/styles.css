@@ -73,3 +73,36 @@
 .promotion-panel>strong{font-size:10px;color:#dff1e4;white-space:nowrap}.promotion-panel>div{display:flex;gap:6px;flex:1}.promotion-panel>div button{width:35px;height:35px;border-radius:8px;border:1px solid #496653;background:#e6e8d8;display:grid;place-items:center}.promotion-panel>div button:hover{border-color:#75d6a1;transform:translateY(-1px)}.promotion-panel>div span{font-size:25px}.promotion-panel .promotion-cancel{background:transparent;border:0;color:#a5b7ac;font-size:9px}
 .light .promotion-panel{background:#e8f4e9;border-color:#b8d7bd}.light .promotion-panel>strong{color:#24412e}.light .promotion-panel>div button{background:#fff;border-color:#c8ddcb}.light .promotion-panel .promotion-cancel{color:#5e7564}
 @media(max-width:520px){.promotion-panel{gap:7px;padding:8px}.promotion-panel>div{gap:4px}.promotion-panel>div button{width:31px;height:31px}.promotion-panel>strong{font-size:9px}}
+
+
+.theme-root{min-height:100vh}.theme-root.light{background:#f4f7f2;color:#17241c}.motion-off *,.motion-off *::before,.motion-off *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+.light .auth-screen,.light .profile-screen,.light .online-screen{background:radial-gradient(ellipse at 70% 0,#d8eddd 0,transparent 45%),#f4f7f2;color:#17241c}
+.light .auth-card,.light .profile-card,.light .online-board-panel,.light .online-side-panel{background:linear-gradient(145deg,#fff,#f6faf5);border-color:#dce7dc;box-shadow:0 20px 65px #223c2912;color:#17241c}
+.light .auth-brand,.light .profile-card .auth-brand,.light .online-back{color:#17241c}.light .auth-brand>span,.light .auth-brand b span{color:#258a57}
+.light .auth-card h1,.light .profile-card h1,.light .online-side-panel h1{color:#1c2d21}
+.light .auth-subtitle,.light .online-side-panel>p{color:#68786d}
+.light .auth-back{color:#5d7163}
+.light .auth-form label{color:#42584a}
+.light .auth-form input{background:#f2f6f1;border-color:#dce7dc;color:#24372b}
+.light .auth-form input::placeholder{color:#89988d}
+.light .google-button{background:#f0f5ef;border-color:#dce7dc;color:#26392c}
+.light .auth-divider{color:#849387}.light .auth-divider span{background:#dce7dc}
+.light .auth-switch{color:#68786d}.light .auth-switch button,.light .forgot-link{color:#258a57}
+.light .auth-legal{border-color:#dce7dc;color:#78887c}.light .auth-footnote{color:#68786d}
+.light .auth-config-note{background:#fbf5e8;border-color:#ead9b1;color:#80652c}
+.light .online-header{border-color:#dce7dc}.light .online-status{color:#68786d}
+.light .online-player-row b{color:#26392c}.light .online-player-row small{color:#68786d}
+.light .online-control{background:#e4f5e8;color:#258a57}
+.light .online-field-label{color:#5d7666}.light .online-field-label select{background:#f2f6f1;border-color:#dce7dc;color:#24372b}
+.light .online-empty-board{background:linear-gradient(145deg,#fff,#edf5ed);border-color:#c9ddcb}
+.light .online-empty-board b{color:#26392c}.light .online-empty-board p{color:#68786d}
+.light .online-game-status{color:#68786d}.light .online-secondary{background:#f0f5ef;border-color:#dce7dc;color:#34483a}
+.light .online-match-found{background:#e8f5e9;border-color:#b8d7bd}.light .online-match-found b{color:#26392c}
+.light .online-security{border-color:#dce7dc;color:#68786d}
+.light .online-game-actions button{background:#f0f5ef;border-color:#dce7dc;color:#34483a}
+.light .online-game-actions .resign{background:#fbefef;border-color:#e5c5c5;color:#a34d4d}
+.light .join-private input{background:#f2f6f1;border-color:#dce7dc;color:#24372b}
+.light .invite-code{background:#eaf5eb;border-color:#b8d7bd}.light .invite-code span{color:#5c8067}.light .invite-code b{color:#216a42}.light .invite-code button{color:#258a57}
+.light .profile-identity{background:#f0f5ef;border-color:#dce7dc}.light .profile-identity strong{color:#26392c}.light .profile-identity span{color:#68786d}
+.light .profile-security{border-color:#dce7dc}.light .profile-security>div+div{border-color:#dce7dc}.light .profile-security b{color:#26392c}.light .profile-security small{color:#68786d}
+.light .profile-security>button,.light .profile-security .verification-actions button{color:#258a57}
