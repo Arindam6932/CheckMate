@@ -26,6 +26,7 @@ type GameRoom = {
   lastMoveAt: number | null;
   paused: boolean;
   disconnectedUids: Set<string>;
+  callParticipants: Set<string>;
 };
 
 const app = express();
@@ -81,6 +82,7 @@ function emitGameStart(white: PlayerSocket, black: PlayerSocket, timeControl: Ti
     lastMoveAt: Date.now(),
     paused: false,
     disconnectedUids: new Set<string>(),
+    callParticipants: new Set<string>(),
   };
   games.set(id, room);
   white.join(id);
@@ -305,6 +307,35 @@ io.on('connection', (socket: PlayerSocket) => {
     });
   });
 
+  socket.on('call:join', (payload: { gameId?: unknown }) => {
+    const room = typeof payload.gameId === 'string' ? games.get(payload.gameId) : undefined;
+    const uid = socket.data.uid as string;
+    if (!room || room.status !== 'active' || !getPlayerColor(room, uid)) return sendError(socket, 'In-game calls are available only to the two active players.');
+    if (!room.callParticipants.has(uid) && room.callParticipants.size >= 2) return sendError(socket, 'This private call already has two players.');
+    const initiator = room.callParticipants.size === 0;
+    room.callParticipants.add(uid);
+    socket.emit('call:ready', { gameId: room.id, initiator });
+    socket.to(room.id).emit('call:peer-joined');
+  });
+
+  socket.on('call:signal', (payload: { gameId?: unknown; signal?: unknown }) => {
+    const room = typeof payload.gameId === 'string' ? games.get(payload.gameId) : undefined;
+    const uid = socket.data.uid as string;
+    if (!room || !room.callParticipants.has(uid) || !getPlayerColor(room, uid)) return sendError(socket, 'You are not a participant in this private call.');
+    if (!payload.signal || typeof payload.signal !== 'object' || JSON.stringify(payload.signal).length > 65_536) {
+      return sendError(socket, 'Invalid call signal.');
+    }
+    socket.to(room.id).emit('call:signal', { signal: payload.signal });
+  });
+
+  socket.on('call:leave', (payload: { gameId?: unknown }) => {
+    const room = typeof payload.gameId === 'string' ? games.get(payload.gameId) : undefined;
+    const uid = socket.data.uid as string;
+    if (!room || !room.callParticipants.has(uid)) return;
+    room.callParticipants.delete(uid);
+    socket.to(room.id).emit('call:peer-left');
+  });
+
   socket.on('disconnect', () => {
     removeFromQueue(socket.id);
     for (const [code, invite] of privateInvites.entries()) {
@@ -314,7 +345,9 @@ io.on('connection', (socket: PlayerSocket) => {
     const anotherSession = [...io.sockets.sockets.values()].some(candidate => candidate.data.uid === uid);
     if (anotherSession) return;
     for (const room of games.values()) {
-      if (room.status !== 'active' || !getPlayerColor(room, uid)) continue;
+      if (!getPlayerColor(room, uid)) continue;
+      if (room.callParticipants.delete(uid)) socket.to(room.id).emit('call:peer-left');
+      if (room.status !== 'active') continue;
       room.disconnectedUids.add(uid);
       room.paused = true;
       room.lastMoveAt = null;
