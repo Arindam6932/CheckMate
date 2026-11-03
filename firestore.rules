@@ -220,12 +220,9 @@ service cloud.firestore {
 
       match /participants/{uid} {
         allow read: if signedIn();
-        allow create: if ownsPlayer(uid)
-          && request.resource.data.uid == request.auth.uid
-          && get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.status == 'open'
-          && request.resource.data.keys().hasOnly(['uid', 'displayName', 'joinedAt']);
-        allow delete: if ownsPlayer(uid);
-        allow update: if false;
+        // Registration and withdrawal are performed by the verified Admin SDK API.
+        // Clients may only read participant records; this prevents bypassing capacity checks.
+        allow create, update, delete: if false;
       }
     }
 
