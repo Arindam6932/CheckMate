@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import {
-  ArrowLeft, Check, ChevronRight, CircleHelp, Contrast, Eye, Gamepad2, Headphones,
+  ArrowLeft, Check, ChevronRight, CircleHelp, Contrast, Crown, Eye, Gamepad2, Headphones,
   LayoutGrid, Monitor, Moon, Palette, RotateCcw, Sparkles, Sun, Volume2,
   VolumeX, WandSparkles, ImagePlus, Trash2
 } from 'lucide-react';
