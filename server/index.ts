@@ -439,6 +439,112 @@ io.on('connection', (socket: PlayerSocket) => {
   });
 });
 
+
+async function verifiedHttpUid(request: express.Request, response: express.Response): Promise<string | null> {
+  const authorization = request.header('authorization') || '';
+  const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
+  if (!token) { response.status(401).json({ error: 'Authentication required.' }); return null; }
+  try {
+    const decoded = await firebaseAuth.verifyIdToken(token);
+    if (decoded.email_verified !== true) { response.status(403).json({ error: 'Verify your email address first.' }); return null; }
+    return decoded.uid;
+  } catch {
+    response.status(401).json({ error: 'Invalid or expired account session.' });
+    return null;
+  }
+}
+
+app.post('/tournaments/:tournamentId/register', async (request, response) => {
+  const uid = await verifiedHttpUid(request, response);
+  if (!uid) return;
+  const tournamentId = String(request.params.tournamentId || '');
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(tournamentId)) return response.status(400).json({ error: 'Invalid tournament ID.' });
+  try {
+    const tournamentRef = firestore.collection('tournaments').doc(tournamentId);
+    const participantRef = tournamentRef.collection('participants').doc(uid);
+    const participantsQuery = tournamentRef.collection('participants');
+    const profileRef = firestore.collection('publicProfiles').doc(uid);
+    const outcome = await firestore.runTransaction(async transaction => {
+      const [tournamentSnapshot, participantSnapshot, participantsSnapshot, profileSnapshot] = await Promise.all([
+        transaction.get(tournamentRef), transaction.get(participantRef),
+        transaction.get(participantsQuery), transaction.get(profileRef),
+      ]);
+      if (!tournamentSnapshot.exists) return { status: 404, error: 'Tournament not found.' };
+      const tournament = tournamentSnapshot.data()!;
+      if (participantSnapshot.exists) return { status: 200, alreadyJoined: true, count: participantsSnapshot.size };
+      if (tournament.status !== 'open') return { status: 409, error: 'Registration is closed.' };
+      if (!(tournament.startsAt instanceof Timestamp) || tournament.startsAt.toMillis() <= Date.now()) {
+        return { status: 409, error: 'This tournament has already started.' };
+      }
+      const capacity = Number(tournament.capacity);
+      if (!Number.isInteger(capacity) || capacity < 2 || participantsSnapshot.size >= capacity) {
+        return { status: 409, error: 'This tournament is full.' };
+      }
+      const profile = profileSnapshot.data() || {};
+      const displayName = typeof profile.displayName === 'string' ? profile.displayName.slice(0, 30) : 'CHECKMATE player';
+      transaction.create(participantRef, { uid, displayName, joinedAt: FieldValue.serverTimestamp() });
+      return { status: 201, alreadyJoined: false, count: participantsSnapshot.size + 1 };
+    });
+    const { status, ...body } = outcome;
+    response.status(status).json(body);
+  } catch (error) {
+    console.error('Tournament registration failed:', error);
+    response.status(500).json({ error: 'Could not complete tournament registration.' });
+  }
+});
+
+app.delete('/tournaments/:tournamentId/register', async (request, response) => {
+  const uid = await verifiedHttpUid(request, response);
+  if (!uid) return;
+  const tournamentId = String(request.params.tournamentId || '');
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(tournamentId)) return response.status(400).json({ error: 'Invalid tournament ID.' });
+  try {
+    const tournamentRef = firestore.collection('tournaments').doc(tournamentId);
+    const participantRef = tournamentRef.collection('participants').doc(uid);
+    const outcome = await firestore.runTransaction(async transaction => {
+      const [tournamentSnapshot, participantSnapshot] = await Promise.all([
+        transaction.get(tournamentRef), transaction.get(participantRef),
+      ]);
+      if (!tournamentSnapshot.exists) return { status: 404, error: 'Tournament not found.' };
+      if (!participantSnapshot.exists) return { status: 200, withdrawn: false };
+      const tournament = tournamentSnapshot.data()!;
+      if (tournament.startsAt instanceof Timestamp && tournament.startsAt.toMillis() <= Date.now()) {
+        return { status: 409, error: 'You cannot withdraw after the tournament has started.' };
+      }
+      transaction.delete(participantRef);
+      return { status: 200, withdrawn: true };
+    });
+    const { status, ...body } = outcome;
+    response.status(status).json(body);
+  } catch (error) {
+    console.error('Tournament withdrawal failed:', error);
+    response.status(500).json({ error: 'Could not withdraw from this tournament.' });
+  }
+});
+
+app.post('/tournaments/:tournamentId/close', async (request, response) => {
+  const uid = await verifiedHttpUid(request, response);
+  if (!uid) return;
+  const tournamentId = String(request.params.tournamentId || '');
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(tournamentId)) return response.status(400).json({ error: 'Invalid tournament ID.' });
+  try {
+    const tournamentRef = firestore.collection('tournaments').doc(tournamentId);
+    const outcome = await firestore.runTransaction(async transaction => {
+      const snapshot = await transaction.get(tournamentRef);
+      if (!snapshot.exists) return { status: 404, error: 'Tournament not found.' };
+      if (snapshot.data()?.createdBy !== uid) return { status: 403, error: 'Only the tournament organizer can close registration.' };
+      if (snapshot.data()?.status !== 'open') return { status: 409, error: 'Registration is already closed.' };
+      transaction.update(tournamentRef, { status: 'closed' });
+      return { status: 200, closed: true };
+    });
+    const { status, ...body } = outcome;
+    response.status(status).json(body);
+  } catch (error) {
+    console.error('Tournament close failed:', error);
+    response.status(500).json({ error: 'Could not close tournament registration.' });
+  }
+});
+
 app.get('/ice-servers', async (request, response) => {
   const authorization = request.header('authorization') || '';
   const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
