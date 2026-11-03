@@ -311,7 +311,8 @@ io.on('connection', (socket: PlayerSocket) => {
     const room = typeof payload.gameId === 'string' ? games.get(payload.gameId) : undefined;
     const uid = socket.data.uid as string;
     if (!room || room.status !== 'active' || !getPlayerColor(room, uid)) return sendError(socket, 'In-game calls are available only to the two active players.');
-    if (!room.callParticipants.has(uid) && room.callParticipants.size >= 2) return sendError(socket, 'This private call already has two players.');
+    if (room.callParticipants.has(uid)) return sendError(socket, 'You are already connected to this private call.');
+    if (room.callParticipants.size >= 2) return sendError(socket, 'This private call already has two players.');
     const initiator = room.callParticipants.size === 0;
     room.callParticipants.add(uid);
     socket.emit('call:ready', { gameId: room.id, initiator });
