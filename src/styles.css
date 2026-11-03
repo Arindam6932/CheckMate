@@ -215,3 +215,9 @@
 .theme-root-frame .play-card.featured .play-arrow,
 .theme-root-frame .text-link,
 .theme-root-frame .learn-footer a{color:var(--user-accent)}
+
+
+.theme-root-frame:not(.motion-off) *,.theme-root-frame:not(.motion-off) *::before,.theme-root-frame:not(.motion-off) *::after{transition-duration:var(--animation-duration,180ms)}
+.theme-root-frame .settings-title-icon,.theme-root-frame .studio-choice.active,.theme-root-frame .studio-toggle-icon{color:var(--user-accent)}
+.theme-root-frame .online-eyebrow,.theme-root-frame .eyebrow{color:var(--user-accent)}
+.theme-root-frame .play-card.featured .play-icon{color:var(--user-accent)}
