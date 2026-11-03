@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './context/auth-context';
 import { Chess, type Square } from 'chess.js';
@@ -21,6 +21,7 @@ const glyph: Record<string, string> = {
   bk: '♚', bq: '♛', br: '♜', bb: '♝', bn: '♞', bp: '♟',
 };
 const initialGame = () => new Chess();
+const formatClock = (seconds: number) => `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
 
 export default function App() {
   const navigate = useNavigate();
@@ -36,11 +37,30 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(true);
   const [boardTheme, setBoardTheme] = useState('classic');
   const [pieceSet, setPieceSet] = useState('classic');
+  const [timeControl, setTimeControl] = useState('10+0');
+  const [whiteTime, setWhiteTime] = useState(600);
+  const [blackTime, setBlackTime] = useState(600);
+  const [clockStarted, setClockStarted] = useState(false);
+  const [flagged, setFlagged] = useState<'w' | 'b' | null>(null);
 
   const board = useMemo(() => {
     const rows = game.board();
     return flipped ? [...rows].reverse().map(row => [...row].reverse()) : rows;
   }, [game, flipped]);
+
+  useEffect(() => {
+    if (!clockStarted || flagged || game.isGameOver()) return;
+    const timer = window.setInterval(() => {
+      if (game.turn() === 'w') setWhiteTime(value => Math.max(0, value - 1));
+      else setBlackTime(value => Math.max(0, value - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [clockStarted, game, flagged]);
+
+  useEffect(() => {
+    if (clockStarted && whiteTime === 0) setFlagged('w');
+    if (clockStarted && blackTime === 0) setFlagged('b');
+  }, [clockStarted, whiteTime, blackTime]);
 
   const playedMoves = game.history({ verbose: true });
   const lastMove = playedMoves[playedMoves.length - 1];
@@ -53,10 +73,16 @@ export default function App() {
 
   function chooseSquare(square: Square) {
     const piece = game.get(square);
+    if (flagged || game.isGameOver()) return;
     if (selected && legal.includes(square)) {
       const next = new Chess(game.fen());
       try {
+        const movingSide = game.turn();
         next.move({ from: selected, to: square, promotion: 'q' });
+        const increment = Number(timeControl.split('+')[1] || 0);
+        if (movingSide === 'w') setWhiteTime(value => value + increment);
+        else setBlackTime(value => value + increment);
+        setClockStarted(true);
         setGame(next);
         setNotice(next.isCheckmate() ? 'Checkmate. Game over.' : next.isCheck() ? 'Check.' : 'Move played.');
       } catch { setNotice('That move is not legal.'); }
@@ -73,6 +99,8 @@ export default function App() {
 
   function resetGame() {
     setGame(new Chess()); setSelected(null); setLegal([]);
+    const initialSeconds = Number(timeControl.split('+')[0]) * 60;
+    setWhiteTime(initialSeconds); setBlackTime(initialSeconds); setClockStarted(false); setFlagged(null);
     setNotice('New game started. White to move.');
   }
   function undoMove() {
@@ -82,7 +110,7 @@ export default function App() {
     setNotice('Last move taken back.');
   }
 
-  const status = game.isCheckmate() ? 'CHECKMATE' : game.isDraw() ? 'DRAW' : game.isCheck() ? 'CHECK' : game.turn() === 'w' ? 'WHITE TO MOVE' : 'BLACK TO MOVE';
+  const status = flagged ? (flagged === 'w' ? 'BLACK WINS ON TIME' : 'WHITE WINS ON TIME') : game.isCheckmate() ? 'CHECKMATE' : game.isDraw() ? 'DRAW' : game.isCheck() ? 'CHECK' : game.turn() === 'w' ? 'WHITE TO MOVE' : 'BLACK TO MOVE';
   const files = flipped ? 'hgfedcba'.split('') : 'abcdefgh'.split('');
   const ranks = flipped ? [1,2,3,4,5,6,7,8] : [8,7,6,5,4,3,2,1];
 
@@ -121,7 +149,7 @@ export default function App() {
 
         <section className="main-grid">
           <div className="board-column">
-            <div className="board-topline"><div className="opponent"><div className="opponent-avatar">♟</div><div><strong>Practice board</strong><span>Local game · No opponent connected</span></div></div><button className="subtle-icon" onClick={() => setNotice('Game options will be expanded in the next build phase.')}><MoreHorizontal size={20}/></button></div>
+            <div className="board-topline"><div className="opponent"><div className="opponent-avatar">♟</div><div><strong>Practice board</strong><span>Local game · No opponent connected</span></div></div><div className="clock-pair"><span className={game.turn() === 'w' && clockStarted ? 'clock-active' : ''}>♙ {formatClock(whiteTime)}</span><span className={game.turn() === 'b' && clockStarted ? 'clock-active' : ''}>♟ {formatClock(blackTime)}</span></div><button className="subtle-icon" onClick={() => setNotice('Game options will be expanded in the next build phase.')}><MoreHorizontal size={20}/></button></div>
             <div className="board-frame">
               <div className="board-coordinates left">{ranks.map(n => <span key={n}>{n}</span>)}</div>
               <div className={`chessboard board-${boardTheme} piece-set-${pieceSet}`}>
@@ -165,7 +193,7 @@ export default function App() {
               <button className="play-card" onClick={() => setNotice('Friend challenges will arrive with social accounts.')}><div className="play-icon blue"><Users size={20}/></div><div className="play-copy"><strong>Play a friend</strong><span>Challenge someone you know</span></div><ChevronRight size={17}/></button>
               <button className="play-card" onClick={() => setNotice('AI opponents will be added with the engine integration.')}><div className="play-icon green"><Sparkles size={20}/></div><div className="play-copy"><strong>Play computer</strong><span>Practice at your own pace</span></div><ChevronRight size={17}/></button>
             </div>
-            <div className="time-control"><div><span className="eyebrow">TIME CONTROL</span><strong>10 min <small>Rapid</small></strong></div><button onClick={() => setNotice('Time control selection is coming soon.')}>Change <ChevronDown size={13}/></button></div>
+            <div className="time-control"><div><span className="eyebrow">TIME CONTROL</span><strong>{timeControl.replace('+', ' + ')} <small>{Number(timeControl.split('+')[0]) < 5 ? 'Bullet' : Number(timeControl.split('+')[0]) < 10 ? 'Blitz' : Number(timeControl.split('+')[0]) < 30 ? 'Rapid' : 'Classical'}</small></strong></div><select aria-label="Select time control" value={timeControl} onChange={event => { const value = event.target.value; setTimeControl(value); const seconds = Number(value.split('+')[0]) * 60; setWhiteTime(seconds); setBlackTime(seconds); setClockStarted(false); setFlagged(null); setGame(new Chess()); setSelected(null); setLegal([]); setNotice('Time control changed. New game ready.'); }}><option value="3+0">3 + 0</option><option value="5+0">5 + 0</option><option value="10+0">10 + 0</option><option value="15+10">15 + 10</option><option value="30+0">30 + 0</option></select></div>
             <div className="sidebar-divider"/>
             <div className="sidebar-heading compact"><div><span className="eyebrow">MAKE YOUR MOVE</span><h2>Explore more</h2></div><button className="text-link" onClick={() => setActiveNav('Learn')}>View all <ArrowRight size={13}/></button></div>
             <div className="explore-grid">
