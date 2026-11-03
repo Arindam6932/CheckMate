@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { collection, deleteDoc, doc, getDoc, onSnapshot, serverTimestamp, setDoc, Timestamp, updateDoc, where, query } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot, serverTimestamp, setDoc, Timestamp, where, query } from 'firebase/firestore';
 import { ArrowLeft, CalendarDays, Crown, Flag, Plus, Trophy, Users } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
 import { db } from '../lib/firebase';
@@ -77,34 +77,36 @@ export default function TournamentsPage() {
     finally { setBusy(false); }
   }
 
-  async function register(event: Tournament) {
-    if (!db || !user) return;
-    setError(''); setNotice('');
+  async function tournamentRequest(event: Tournament, action: 'register' | 'withdraw' | 'close') {
+    if (!user) return;
+    setError(''); setNotice(''); setBusy(true);
     try {
-      await setDoc(doc(db, 'tournaments', event.id, 'participants', user.uid), {
-        uid: user.uid, displayName: user.displayName || 'Player', joinedAt: serverTimestamp(),
+      const token = await user.getIdToken();
+      const base = (import.meta.env.VITE_SERVER_URL || '').replace(/\\/$/, '');
+      if (!base) throw new Error('Tournament server URL is not configured.');
+      const response = await fetch(`${base}/tournaments/${encodeURIComponent(event.id)}/${action === 'close' ? 'close' : 'register'}`, {
+        method: action === 'withdraw' ? 'DELETE' : 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       });
-      setJoined(current => ({ ...current, [event.id]: true }));
-      setNotice('You are registered for ' + event.name + '.');
-    } catch (err) { setError(err instanceof Error ? err.message : 'Could not register for this tournament.'); }
+      const result = await response.json() as { error?: string; alreadyJoined?: boolean };
+      if (!response.ok) throw new Error(result.error || 'Tournament request failed.');
+      if (action === 'register') {
+        setJoined(current => ({ ...current, [event.id]: true }));
+        setNotice(result.alreadyJoined ? 'You are already registered.' : 'You are registered for ' + event.name + '.');
+      } else if (action === 'withdraw') {
+        setJoined(current => ({ ...current, [event.id]: false }));
+        setNotice('You have withdrawn from ' + event.name + '.');
+      } else {
+        setNotice('Tournament registration closed.');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Tournament request failed.');
+    } finally { setBusy(false); }
   }
 
-  async function withdraw(event: Tournament) {
-    if (!db || !user) return;
-    try {
-      await deleteDoc(doc(db, 'tournaments', event.id, 'participants', user.uid));
-      setJoined(current => ({ ...current, [event.id]: false }));
-      setNotice('You have withdrawn from ' + event.name + '.');
-    } catch (err) { setError(err instanceof Error ? err.message : 'Could not withdraw from this tournament.'); }
-  }
-
-  async function closeTournament(event: Tournament) {
-    if (!db) return;
-    try {
-      await updateDoc(doc(db, 'tournaments', event.id), { status: 'closed' });
-      setNotice('Tournament registration closed.');
-    } catch (err) { setError(err instanceof Error ? err.message : 'Could not close registration.'); }
-  }
+  async function register(event: Tournament) { await tournamentRequest(event, 'register'); }
+  async function withdraw(event: Tournament) { await tournamentRequest(event, 'withdraw'); }
+  async function closeTournament(event: Tournament) { await tournamentRequest(event, 'close'); }
 
   if (loading || !user) return <main className="tournaments-loading">Loading tournaments…</main>;
 
@@ -115,8 +117,8 @@ export default function TournamentsPage() {
       {error && <div className="tournament-error">{error}</div>}{notice && <div className="tournament-notice">{notice}</div>}
       {showCreate && <form className="create-tournament-form" onSubmit={createTournament}><div className="form-heading"><b>Create a tournament</b><small>Set up an event for the CHECKMATE community.</small></div><label>EVENT NAME<input value={name} onChange={e=>setName(e.target.value)} maxLength={60} required placeholder="e.g. Friday Night Blitz"/></label><label>DESCRIPTION<textarea value={description} onChange={e=>setDescription(e.target.value)} maxLength={300} rows={2} placeholder="A short description of the event"/></label><div className="tournament-form-grid"><label>FORMAT<select value={format} onChange={e=>setFormat(e.target.value)}><option>Arena</option><option>Swiss</option><option>Round robin</option><option>Knockout</option></select></label><label>TIME CONTROL<select value={timeControl} onChange={e=>setTimeControl(e.target.value)}><option value="3+0">3 + 0 · Blitz</option><option value="5+0">5 + 0 · Blitz</option><option value="10+0">10 + 0 · Rapid</option><option value="15+10">15 + 10 · Rapid</option><option value="30+0">30 + 0 · Classical</option></select></label><label>PLAYER CAPACITY<input type="number" min="2" max="256" value={capacity} onChange={e=>setCapacity(e.target.value)} required/></label><label>START DATE & TIME<input type="datetime-local" value={startsAt} onChange={e=>setStartsAt(e.target.value)} required/></label></div><div className="tournament-form-actions"><button type="button" onClick={()=>setShowCreate(false)}>Cancel</button><button type="submit" disabled={busy}>{busy?'Creating…':'Create tournament'}</button></div></form>}
       <div className="tournament-list-heading"><div><span className="online-eyebrow">OPEN REGISTRATION</span><h2>Upcoming events</h2></div><span>{events.length} EVENTS</span></div>
-      {events.length===0 ? <div className="tournaments-empty"><Trophy size={36}/><b>No open tournaments yet.</b><span>Create an event or check back when the community schedules one.</span></div> : <div className="tournament-grid">{events.map(event=><article className="tournament-card" key={event.id}><div className="tournament-card-top"><span className="tournament-format"><Crown size={13}/>{event.format}</span><span className="tournament-open">REGISTRATION OPEN</span></div><h3>{event.name}</h3><p>{event.description || 'A CHECKMATE community tournament.'}</p><div className="tournament-facts"><span><Flag size={14}/>{event.timeControl}</span><span><Users size={14}/>{event.capacity} target capacity</span><span><CalendarDays size={14}/>{event.startsAt.toDate().toLocaleString()}</span></div><div className="tournament-card-footer">{event.createdBy===user.uid?<button className="close-registration" onClick={()=>void closeTournament(event)}>Close registration</button>:<button className={joined[event.id]?'registered':'register-button'} onClick={()=>void (joined[event.id]?withdraw(event):register(event))}>{joined[event.id]?'Withdraw':'Join tournament'}</button>}<small>{event.createdBy===user.uid?'Organizer':'Hosted by CHECKMATE player'}</small></div></article>)}</div>}
-      <div className="tournament-disclaimer">Tournament registration is available in this build. Capacity is currently informational; hard registration caps, pairings, standings, automated rounds, and result adjudication are part of the next competitive-system phase.</div>
+      {events.length===0 ? <div className="tournaments-empty"><Trophy size={36}/><b>No open tournaments yet.</b><span>Create an event or check back when the community schedules one.</span></div> : <div className="tournament-grid">{events.map(event=><article className="tournament-card" key={event.id}><div className="tournament-card-top"><span className="tournament-format"><Crown size={13}/>{event.format}</span><span className="tournament-open">REGISTRATION OPEN</span></div><h3>{event.name}</h3><p>{event.description || 'A CHECKMATE community tournament.'}</p><div className="tournament-facts"><span><Flag size={14}/>{event.timeControl}</span><span><Users size={14}/>{event.capacity} player capacity</span><span><CalendarDays size={14}/>{event.startsAt.toDate().toLocaleString()}</span></div><div className="tournament-card-footer">{event.createdBy===user.uid?<button className="close-registration" onClick={()=>void closeTournament(event)}>Close registration</button>:<button className={joined[event.id]?'registered':'register-button'} onClick={()=>void (joined[event.id]?withdraw(event):register(event))}>{joined[event.id]?'Withdraw':'Join tournament'}</button>}<small>{event.createdBy===user.uid?'Organizer':'Hosted by CHECKMATE player'}</small></div></article>)}</div>}
+      <div className="tournament-disclaimer">Registration is verified by the CHECKMATE server. Player capacity is enforced transactionally; tournament pairings, standings, and automated rounds are still in development.</div>
     </section>
   </main>;
 }
