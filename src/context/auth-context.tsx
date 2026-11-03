@@ -15,6 +15,8 @@ type AuthContextValue = {
   signUp: (name: string, email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  updatePlayerName: (name: string) => Promise<void>;
+  resendVerification: () => Promise<void>;
   logOut: () => Promise<void>;
 };
 
@@ -81,6 +83,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async resetPassword(email) {
       if (!auth) throw unavailable();
       await sendPasswordResetEmail(auth, email.trim());
+    },
+    async updatePlayerName(name) {
+      if (!auth?.currentUser || !db) throw unavailable();
+      const cleanName = name.trim();
+      if (cleanName.length < 2 || cleanName.length > 30) throw new Error('Display name must be between 2 and 30 characters.');
+      await updateProfile(auth.currentUser, { displayName: cleanName });
+      await updateDoc(doc(db, 'players', auth.currentUser.uid), {
+        displayName: cleanName,
+        updatedAt: serverTimestamp(),
+      });
+      setUser({ ...auth.currentUser });
+    },
+    async resendVerification() {
+      if (!auth?.currentUser) throw unavailable();
+      if (auth.currentUser.emailVerified) return;
+      await sendEmailVerification(auth.currentUser);
     },
     async logOut() {
       if (!auth) throw unavailable();
