@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './context/auth-context';
+import { usePreferences } from './context/preferences-context';
 import { Chess, type Square } from 'chess.js';
 import {
   Activity, ArrowDownUp, ArrowLeft, ArrowRight, Bell, BookOpen, ChevronDown,
@@ -31,6 +32,7 @@ const formatClock = (seconds: number) => `${Math.floor(seconds / 60).toString().
 export default function App() {
   const navigate = useNavigate();
   const { user, logOut } = useAuth();
+  const { isDark, appearance, setAppearance, boardTheme, setBoardTheme, pieceSet, setPieceSet } = usePreferences();
   const [game, setGame] = useState(initialGame);
   const [selected, setSelected] = useState<Square | null>(null);
   const [legal, setLegal] = useState<Square[]>([]);
@@ -39,9 +41,6 @@ export default function App() {
   const [showProfile, setShowProfile] = useState(false);
   const [showMoves, setShowMoves] = useState(true);
   const [notice, setNotice] = useState('Your board is ready. Make the first move.');
-  const [darkMode, setDarkMode] = useState(true);
-  const [boardTheme, setBoardTheme] = useState('classic');
-  const [pieceSet, setPieceSet] = useState('classic');
   const [timeControl, setTimeControl] = useState('10+0');
   const [whiteTime, setWhiteTime] = useState(600);
   const [blackTime, setBlackTime] = useState(600);
@@ -144,7 +143,7 @@ export default function App() {
   const ranks = flipped ? [1,2,3,4,5,6,7,8] : [8,7,6,5,4,3,2,1];
 
   return (
-    <div className={darkMode ? 'app-shell' : 'app-shell light'}>
+    <div className={isDark ? 'app-shell' : 'app-shell light'}>
       <div className="ambient ambient-one" /><div className="ambient ambient-two" />
       <header className="topbar">
         <a className="brand" href="#" onClick={() => setActiveNav('Play')}>
@@ -164,7 +163,7 @@ export default function App() {
           <button className="avatar-button" onClick={() => setShowProfile(!showProfile)} aria-label="Open profile menu">{user?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "A"}<ChevronDown size={13}/></button>
           {showProfile && <div className="profile-menu">
             <div className="profile-heading"><div className="avatar large">{user?.displayName?.charAt(0).toUpperCase() || "A"}</div><div><strong>{user?.displayName || "Guest Player"}</strong><span>{user?.email || "Sign in to save progress"}</span></div></div>
-            {['Your profile','Game history','Statistics & ratings','Settings','Help & support'].map((label, i) => <button key={label} onClick={() => { setShowProfile(false); if (label === 'Your profile') navigate('/profile'); else if (label === 'Game history') navigate('/history'); else setNotice(label + ' will be added in a later build phase.'); }}><span>{[<Users/>,<History/>,<Activity/>,<Settings/>,<CircleHelp/>][i]}</span>{label}</button>)}
+            {['Your profile','Game history','Statistics & ratings','Settings','Help & support'].map((label, i) => <button key={label} onClick={() => { setShowProfile(false); if (label === 'Your profile') navigate('/profile'); else if (label === 'Game history') navigate('/history'); else if (label === 'Settings') navigate('/settings'); else setNotice(label + ' will be added in a later build phase.'); }}><span>{[<Users/>,<History/>,<Activity/>,<Settings/>,<CircleHelp/>][i]}</span>{label}</button>)}
             <button className="profile-signin" onClick={() => { setShowProfile(false); if (user) { void logOut().then(() => setNotice("Signed out successfully.")).catch(() => setNotice("Could not sign out. Please retry.")); } else { navigate("/auth?mode=login"); } }}>{user ? "Sign out" : "Sign in / Create account"} <ArrowRight size={14}/></button>
           </div>}
         </div>
@@ -201,7 +200,7 @@ export default function App() {
             {promotionRequest && <div className="promotion-panel"><strong>Choose promotion</strong><div>{(['q','r','b','n'] as const).map(piece => <button key={piece} onClick={() => completePromotion(piece)} aria-label={`Promote to ${piece}`}><span className={promotionRequest.color === 'w' ? 'white-piece' : 'black-piece'}>{glyph[promotionRequest.color + piece]}</span></button>)}</div><button className="promotion-cancel" onClick={() => setPromotionRequest(null)}>Cancel</button></div>}
             <div className="board-controls">
               <div className="turn-indicator"><span className={game.turn() === 'w' ? 'turn-piece white-turn' : 'turn-piece black-turn'}>{game.turn() === 'w' ? '♙' : '♟'}</span><div><b>{status}</b><small>{notice}</small></div></div>
-              <div className="control-buttons"><button onClick={undoMove} disabled={!game.history().length} title="Undo"><ArrowLeft size={17}/></button><button onClick={() => setFlipped(!flipped)} title="Flip board"><ArrowDownUp size={17}/></button><button onClick={resetGame} title="Restart"><History size={17}/></button><button onClick={() => setNotice('Sound controls will be available with the settings system.')} title="Sound"><Volume2 size={17}/></button></div>
+              <div className="control-buttons"><button onClick={undoMove} disabled={!game.history().length} title="Undo"><ArrowLeft size={17}/></button><button onClick={() => setFlipped(!flipped)} title="Flip board"><ArrowDownUp size={17}/></button><button onClick={resetGame} title="Restart"><History size={17}/></button><button onClick={() => navigate('/settings')} title="Sound"><Volume2 size={17}/></button></div>
             </div>
             <div className="board-customization">
               <label>BOARD STYLE<select value={boardTheme} onChange={e => setBoardTheme(e.target.value)}>
@@ -240,7 +239,7 @@ export default function App() {
           <div className="lower-card moves-card"><div className="section-title"><div><span className="eyebrow">LIVE BOARD</span><h3>Move history</h3></div><button className="subtle-icon" onClick={() => setShowMoves(!showMoves)}>{showMoves ? <ChevronDown size={18}/> : <ChevronRight size={18}/>}</button></div>{showMoves && <div className="move-list">{movePairs.length ? movePairs.map(pair => <div className="move-row" key={pair.number}><span>{pair.number}.</span><b>{pair.white}</b><b>{pair.black || '…'}</b></div>) : <div className="no-moves"><span>♘</span><p>Your moves will appear here.</p><small>Make a move to get started.</small></div>}</div>}</div>
         </section>
 
-        <footer className="footer"><div className="footer-brand"><span className="brand-mark">♞</span> CHECK<span className="brand-gold">MATE</span></div><span>Thoughtfully made for the love of the game.</span><div><button onClick={() => setNotice('Fair play and safety standards will be published before multiplayer launch.')}><ShieldCheck size={14}/> Fair play</button><button onClick={() => setNotice('Settings are coming soon.')}><Settings size={14}/> Settings</button></div></footer>
+        <footer className="footer"><div className="footer-brand"><span className="brand-mark">♞</span> CHECK<span className="brand-gold">MATE</span></div><span>Thoughtfully made for the love of the game.</span><div><button onClick={() => setNotice('Fair play and safety standards will be published before multiplayer launch.')}><ShieldCheck size={14}/> Fair play</button><button onClick={() => navigate('/settings')}><Settings size={14}/> Settings</button></div></footer>
       </main>
       {notice && <div className="sr-only" aria-live="polite">{notice}</div>}
     </div>
