@@ -12,7 +12,7 @@ type PreferenceState = {
   appearance: Appearance; boardTheme: string; pieceSet: string;
   soundEnabled: boolean; soundVolume: number; animationsEnabled: boolean; animationSpeed: number;
   showCoordinates: boolean; showLegalMoves: boolean; highlightLastMove: boolean;
-  compactMode: boolean; boardOrientation: 'white' | 'black'; showMoveList: boolean;
+  compactMode: boolean; autoQueen: boolean; highContrast: boolean; boardOrientation: 'white' | 'black'; showMoveList: boolean;
   backgroundStyle: BackgroundStyle; customBackground: string; accentColor: string;
   customBoardColors: boolean; boardLightColor: string; boardDarkColor: string;
   pieceScale: number; boardCorners: number;
@@ -24,7 +24,7 @@ type PreferencesValue = PreferenceState & {
   setSoundVolume: (value: number) => void; setAnimationsEnabled: (value: boolean) => void;
   setAnimationSpeed: (value: number) => void; setShowCoordinates: (value: boolean) => void;
   setShowLegalMoves: (value: boolean) => void; setHighlightLastMove: (value: boolean) => void;
-  setCompactMode: (value: boolean) => void; setBoardOrientation: (value: 'white' | 'black') => void;
+  setCompactMode: (value: boolean) => void; setAutoQueen: (value: boolean) => void; setHighContrast: (value: boolean) => void; setBoardOrientation: (value: 'white' | 'black') => void;
   setShowMoveList: (value: boolean) => void; setBackgroundStyle: (value: BackgroundStyle) => void;
   setCustomBackground: (value: string) => void; uploadCustomBackground: (file: File) => Promise<void>;
   removeCustomBackground: () => Promise<void>;
@@ -38,7 +38,7 @@ const defaults: PreferenceState = {
   appearance: 'dark', boardTheme: 'classic', pieceSet: 'classic',
   soundEnabled: true, soundVolume: 65, animationsEnabled: true, animationSpeed: 100,
   showCoordinates: true, showLegalMoves: true, highlightLastMove: true,
-  compactMode: false, boardOrientation: 'white', showMoveList: true,
+  compactMode: false, autoQueen: false, highContrast: false, boardOrientation: 'white', showMoveList: true,
   backgroundStyle: 'aurora', customBackground: '', accentColor: '#75d6a1',
   customBoardColors: false, boardLightColor: '#e9e8d9', boardDarkColor: '#56866c',
   pieceScale: 100, boardCorners: 9,
@@ -187,6 +187,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     setShowLegalMoves: value => update('showLegalMoves', value),
     setHighlightLastMove: value => update('highlightLastMove', value),
     setCompactMode: value => update('compactMode', value),
+    setAutoQueen: value => update('autoQueen', value),
+    setHighContrast: value => update('highContrast', value),
     setBoardOrientation: value => update('boardOrientation', value),
     setShowMoveList: value => update('showMoveList', value),
     setBackgroundStyle: value => update('backgroundStyle', value),
@@ -220,10 +222,11 @@ export function usePreferences() {
 }
 
 export function ThemeFrame({ children }: { children: ReactNode }) {
-  const { isDark, animationsEnabled, showCoordinates, showLegalMoves, highlightLastMove, compactMode, backgroundStyle, customBoardColors } = usePreferences();
+  const { isDark, animationsEnabled, showCoordinates, showLegalMoves, highlightLastMove, compactMode, highContrast, backgroundStyle, customBoardColors } = usePreferences();
   const classes = ['theme-root-frame', isDark ? 'dark' : 'light', animationsEnabled ? '' : 'motion-off',
     showCoordinates ? '' : 'hide-coordinates', showLegalMoves ? '' : 'hide-legal-hints',
     highlightLastMove ? '' : 'hide-last-move', compactMode ? 'compact-mode' : '',
+    highContrast ? 'high-contrast' : '',
     customBoardColors ? 'custom-board-colors' : '', 'background-' + backgroundStyle].filter(Boolean).join(' ');
   return <div className={classes}>{children}</div>;
 }
