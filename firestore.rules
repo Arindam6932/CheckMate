@@ -17,12 +17,18 @@ service cloud.firestore {
       allow read: if ownsPlayer(uid);
       allow create: if ownsPlayer(uid)
         && request.resource.data.uid == request.auth.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 2
+        && request.resource.data.displayName.size() <= 30
         && request.resource.data.keys().hasOnly([
           'uid', 'displayName', 'email', 'photoURL', 'emailVerified',
           'createdAt', 'updatedAt', 'profileVersion'
         ]);
       allow update: if ownsPlayer(uid)
         && request.resource.data.uid == resource.data.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 2
+        && request.resource.data.displayName.size() <= 30
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'displayName', 'photoURL', 'updatedAt'
         ]);
@@ -33,11 +39,17 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create: if ownsPlayer(uid)
         && request.resource.data.uid == request.auth.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 2
+        && request.resource.data.displayName.size() <= 30
         && request.resource.data.keys().hasOnly([
           'uid', 'displayName', 'photoURL', 'createdAt', 'updatedAt'
         ]);
       allow update: if ownsPlayer(uid)
         && request.resource.data.uid == resource.data.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 2
+        && request.resource.data.displayName.size() <= 30
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'displayName', 'photoURL', 'updatedAt'
         ]);
