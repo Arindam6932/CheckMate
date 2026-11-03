@@ -35,7 +35,7 @@ const formatClock = (seconds: number) => `${Math.floor(seconds / 60).toString().
 export default function App() {
   const navigate = useNavigate();
   const { user, logOut } = useAuth();
-  const { isDark, setAppearance, boardTheme, setBoardTheme, pieceSet, setPieceSet, boardOrientation, setBoardOrientation, showMoveList, highlightLastMove } = usePreferences();
+  const { isDark, setAppearance, boardTheme, setBoardTheme, pieceSet, setPieceSet, boardOrientation, setBoardOrientation, showMoveList, setShowMoveList, highlightLastMove } = usePreferences();
   const [game, setGame] = useState(initialGame);
   const [selected, setSelected] = useState<Square | null>(null);
   const [legal, setLegal] = useState<Square[]>([]);
@@ -289,7 +289,7 @@ export default function App() {
 
         <section className="lower-grid">
           <div className="lower-card activity-card"><div className="section-title"><div><span className="eyebrow">THE JOURNEY</span><h3>Your chess snapshot</h3></div><span className="muted-tag">NEW PLAYER</span></div><div className="stats-row"><div><strong>{user ? playerStats.rapid : '—'}</strong><span>Rapid rating</span></div><div><strong>{user ? playerStats.games : '—'}</strong><span>Games played</span></div><div><strong>{user && playerStats.games ? Math.round(playerStats.wins / playerStats.games * 100) + '%' : '—'}</strong><span>Win rate</span></div><div><strong>0</strong><span>Day streak</span></div></div><div className="empty-progress"><div className="progress-icon"><Activity size={18}/></div><div><b>Your story starts with a single move.</b><span>Play your first game to begin tracking your progress.</span></div><ChevronRight size={17}/></div></div>
-          <div className="lower-card moves-card"><div className="section-title"><div><span className="eyebrow">LIVE BOARD</span><h3>Move history</h3></div><button className="subtle-icon" onClick={() => setShowMoves(!showMoves)}>{showMoves ? <ChevronDown size={18}/> : <ChevronRight size={18}/>}</button></div>{showMoves && <div className="move-list">{movePairs.length ? movePairs.map(pair => <div className="move-row" key={pair.number}><span>{pair.number}.</span><b>{pair.white}</b><b>{pair.black || '…'}</b></div>) : <div className="no-moves"><span>♘</span><p>Your moves will appear here.</p><small>Make a move to get started.</small></div>}</div>}</div>
+          <div className="lower-card moves-card"><div className="section-title"><div><span className="eyebrow">LIVE BOARD</span><h3>Move history</h3></div><button className="subtle-icon" onClick={() => { const next = !showMoves; setShowMoves(next); setShowMoveList(next); }}>{showMoves ? <ChevronDown size={18}/> : <ChevronRight size={18}/>}</button></div>{showMoves && <div className="move-list">{movePairs.length ? movePairs.map(pair => <div className="move-row" key={pair.number}><span>{pair.number}.</span><b>{pair.white}</b><b>{pair.black || '…'}</b></div>) : <div className="no-moves"><span>♘</span><p>Your moves will appear here.</p><small>Make a move to get started.</small></div>}</div>}</div>
         </section>
 
         <footer className="footer"><div className="footer-brand"><span className="brand-mark">♞</span> CHECK<span className="brand-gold">MATE</span></div><span>Thoughtfully made for the love of the game.</span><div><button onClick={() => setNotice('Fair play and safety standards will be published before multiplayer launch.')}><ShieldCheck size={14}/> Fair play</button><button onClick={() => navigate('/settings')}><Settings size={14}/> Settings</button></div></footer>
