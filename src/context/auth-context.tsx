@@ -34,18 +34,29 @@ async function savePlayerProfile(user: User, displayName?: string) {
       photoURL: user.photoURL || '',
       updatedAt: serverTimestamp(),
     });
-    return;
+  } else {
+    await setDoc(profileRef, {
+      uid: user.uid,
+      displayName: profileName,
+      email: user.email || '',
+      photoURL: user.photoURL || '',
+      emailVerified: user.emailVerified,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      profileVersion: 1,
+    });
   }
-  await setDoc(profileRef, {
+
+  const publicRef = doc(db, 'publicProfiles', user.uid);
+  const publicProfile = await getDoc(publicRef);
+  const publicFields = {
     uid: user.uid,
     displayName: profileName,
-    email: user.email || '',
     photoURL: user.photoURL || '',
-    emailVerified: user.emailVerified,
-    createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-    profileVersion: 1,
-  });
+  };
+  if (publicProfile.exists()) await updateDoc(publicRef, publicFields);
+  else await setDoc(publicRef, { ...publicFields, createdAt: serverTimestamp() });
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -90,6 +101,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (cleanName.length < 2 || cleanName.length > 30) throw new Error('Display name must be between 2 and 30 characters.');
       await updateProfile(auth.currentUser, { displayName: cleanName });
       await updateDoc(doc(db, 'players', auth.currentUser.uid), {
+        displayName: cleanName,
+        updatedAt: serverTimestamp(),
+      });
+      await updateDoc(doc(db, 'publicProfiles', auth.currentUser.uid), {
         displayName: cleanName,
         updatedAt: serverTimestamp(),
       });
