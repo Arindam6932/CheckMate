@@ -138,19 +138,20 @@ export default function PrivateCall({ socket, gameId }: Props) {
       setVideoMode(false);
       setStatus('Game ended. Private call closed.');
     };
+    const gameState = (data: { gameOver?: boolean }) => { if (data.gameOver) gameEnded(); };
     socket.on('call:ready', ready);
     socket.on('call:peer-joined', peerJoined);
     socket.on('call:signal', signal);
     socket.on('call:peer-left', peerLeft);
     socket.on('game:ended', gameEnded);
-    socket.on('game:state', (data: { gameOver?: boolean }) => { if (data.gameOver) gameEnded(); });
+    socket.on('game:state', gameState);
     return () => {
       socket.off('call:ready', ready);
       socket.off('call:peer-joined', peerJoined);
       socket.off('call:signal', signal);
       socket.off('call:peer-left', peerLeft);
       socket.off('game:ended', gameEnded);
-      socket.off('game:state');
+      socket.off('game:state', gameState);
     };
   }, [socket, gameId]);
 
