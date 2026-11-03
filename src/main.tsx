@@ -12,6 +12,7 @@ import SettingsPage from './pages/settings-page';
 import PuzzlesPage from './pages/puzzles-page';
 import LearnPage from './pages/learn-page';
 import TournamentsPage from './pages/tournaments-page';
+import LeaderboardPage from './pages/leaderboard-page';
 import { PreferencesProvider, ThemeFrame } from './context/preferences-context';
 import './styles.css';
 import './pages/auth-page.css';
@@ -24,6 +25,7 @@ import './pages/settings-page.css';
 import './pages/puzzles-page.css';
 import './pages/learn-page.css';
 import './pages/tournaments-page.css';
+import './pages/leaderboard-page.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -42,6 +44,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               <Route path="/puzzles" element={<PuzzlesPage />} />
               <Route path="/learn" element={<LearnPage />} />
               <Route path="/tournaments" element={<TournamentsPage />} />
+              <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="*" element={<App />} />
             </Routes>
           </AuthProvider>
