@@ -306,3 +306,11 @@
 @media(hover:none){
   .play-card:hover,.explore-grid button:hover{transform:none}
 }
+
+
+/* Stockfish difficulty selector */
+.ai-level-row:has(option[value="10"]:checked){border-color:#75d6a1;box-shadow:inset 0 0 18px #75d6a10b}
+.ai-level-row option{background:#14201b;color:#e6f3e9}
+.ai-level-row select:focus-visible{outline:2px solid #75d6a1;outline-offset:2px}
+.ai-level-row .bot-level-note{font-variant-numeric:tabular-nums}
+.light .ai-level-row option{background:#fff;color:#263d2d}
