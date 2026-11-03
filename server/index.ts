@@ -102,6 +102,19 @@ function sendError(socket: PlayerSocket, message: string) {
   socket.emit('game:error', { message });
 }
 
+function allowRate(socket: PlayerSocket, event: string, maximum: number, windowMs: number): boolean {
+  const now = Date.now();
+  const buckets = (socket.data.rateBuckets ||= new Map<string, { count: number; resetAt: number }>());
+  const bucket = buckets.get(event);
+  if (!bucket || now >= bucket.resetAt) {
+    buckets.set(event, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (bucket.count >= maximum) return false;
+  bucket.count += 1;
+  return true;
+}
+
 async function persistGame(room: GameRoom, result: string, reason: string) {
   const [minutes] = room.timeControl.split('+').map(Number);
   const category = minutes >= 30 ? 'classical' : minutes >= 10 ? 'rapid' : 'blitz';
@@ -209,6 +222,7 @@ io.on('connection', (socket: PlayerSocket) => {
   socket.emit('server:ready', { uid: socket.data.uid });
 
   socket.on('queue:join', (payload: { timeControl?: unknown } = {}) => {
+    if (!allowRate(socket, 'queue:join', 12, 60_000)) return sendError(socket, 'Too many matchmaking requests. Please wait a moment.');
     const control = payload.timeControl;
     if (!validTimeControl(control)) return sendError(socket, 'Choose a supported time control.');
     removeFromQueue(socket.id);
@@ -230,6 +244,7 @@ io.on('connection', (socket: PlayerSocket) => {
   });
 
   socket.on('private:create', (payload: { timeControl?: unknown } = {}) => {
+    if (!allowRate(socket, 'private:create', 5, 60_000)) return sendError(socket, 'Too many private invitations. Please wait before creating another.');
     const control = validTimeControl(payload.timeControl) ? payload.timeControl : '10+0';
     const code = randomBytes(4).toString('hex').toUpperCase();
     privateInvites.set(code, { socketId: socket.id, timeControl: control, expiresAt: Date.now() + 10 * 60_000 });
@@ -336,6 +351,7 @@ io.on('connection', (socket: PlayerSocket) => {
   });
 
   socket.on('game:offer-draw', (payload: { gameId?: unknown }) => {
+    if (!allowRate(socket, 'game:offer-draw', 5, 60_000)) return sendError(socket, 'Please wait before offering another draw.');
     const room = typeof payload.gameId === 'string' ? games.get(payload.gameId) : undefined;
     const uid = socket.data.uid as string;
     if (!room || room.status !== 'active' || !getPlayerColor(room, uid)) return sendError(socket, 'Cannot offer a draw in this game.');
@@ -390,6 +406,7 @@ io.on('connection', (socket: PlayerSocket) => {
   });
 
   socket.on('call:signal', (payload: { gameId?: unknown; signal?: unknown }) => {
+    if (!allowRate(socket, 'call:signal', 40, 10_000)) return sendError(socket, 'Too many call signaling messages.');
     const room = typeof payload.gameId === 'string' ? games.get(payload.gameId) : undefined;
     const uid = socket.data.uid as string;
     if (!room || !room.callParticipants.has(uid) || !getPlayerColor(room, uid)) return sendError(socket, 'You are not a participant in this private call.');
