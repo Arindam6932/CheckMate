@@ -22,4 +22,4 @@ const app = firebaseConfigured
 
 export const auth = app ? getAuth(app) : null;
 export const db = app ? getFirestore(app) : null;
-export const storage = app ? getStorage(app) : null;
+export const storage = app && firebaseConfig.storageBucket ? getStorage(app) : null;
