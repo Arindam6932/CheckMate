@@ -141,7 +141,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     '--user-accent': accentColor, '--board-light': boardLightColor, '--board-dark': boardDarkColor,
     '--piece-scale': pieceScale / 100, '--board-radius': boardCorners + 'px',
     '--animation-duration': animationSpeed * 1.8 + 'ms',
-  } as CSSProperties;
+  } as CSSProperties & Record<`--${string}`, string | number>;
 
   return <PreferencesContext.Provider value={value}>
     <div className="theme-root" style={style}>{children}</div>
