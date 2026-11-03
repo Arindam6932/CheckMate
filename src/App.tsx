@@ -4,7 +4,7 @@ import { useAuth } from './context/auth-context';
 import { usePreferences } from './context/preferences-context';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from './lib/firebase';
-import { findBestMove } from './lib/chess-ai';
+import { cancelStockfishSearch, findStockfishMove } from './lib/chess-ai';
 import { Chess, type Square } from 'chess.js';
 import {
   Activity, ArrowDownUp, ArrowLeft, ArrowRight, Bell, BookOpen, ChevronDown,
@@ -93,20 +93,29 @@ export default function App() {
       setAiThinking(false);
       return;
     }
+    let cancelled = false;
     setAiThinking(true);
+    setNotice(botLevel === 10 ? 'Stockfish 19 Grandmaster mode is calculating…' : 'Stockfish 19 is calculating…');
     const timer = window.setTimeout(() => {
-      const move = findBestMove(game, Math.ceil(botLevel / 4), botLevel);
-      if (move) {
+      void findStockfishMove(game.fen(), botLevel).then(move => {
+        if (cancelled || !move) return;
         const next = cloneGame(game);
         const played = next.move(move);
         const increment = Number(timeControl.split('+')[1] || 0);
         setBlackTime(value => value + increment);
         setGame(next);
-        setNotice(next.isCheckmate() ? 'The computer delivered checkmate.' : `Computer played ${played.san}.`);
-      }
-      setAiThinking(false);
-    }, 350);
-    return () => window.clearTimeout(timer);
+        setNotice(next.isCheckmate() ? 'Stockfish delivered checkmate.' : `Stockfish played ${played.san}.`);
+      }).catch(error => {
+        if (!cancelled) setNotice(error instanceof Error ? `Stockfish error: ${error.message}` : 'Stockfish could not calculate a move. Reload and try again.');
+      }).finally(() => {
+        if (!cancelled) setAiThinking(false);
+      });
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      cancelStockfishSearch();
+    };
   }, [game, gameMode, botLevel, flagged, timeControl]);
 
 
@@ -289,7 +298,7 @@ export default function App() {
               <button className="play-card" onClick={startComputerGame}><div className="play-icon green"><Sparkles size={20}/></div><div className="play-copy"><strong>Play computer</strong><span>Practice at your own pace</span></div><ChevronRight size={17}/></button>
             </div>
             <div className="time-control"><div><span className="eyebrow">TIME CONTROL</span><strong>{timeControl.replace('+', ' + ')} <small>{Number(timeControl.split('+')[0]) < 5 ? 'Bullet' : Number(timeControl.split('+')[0]) < 10 ? 'Blitz' : Number(timeControl.split('+')[0]) < 30 ? 'Rapid' : 'Classical'}</small></strong></div><select aria-label="Select time control" value={timeControl} onChange={event => { const value = event.target.value; setTimeControl(value); const seconds = Number(value.split('+')[0]) * 60; setWhiteTime(seconds); setBlackTime(seconds); setClockStarted(false); setFlagged(null); setGameMode('local'); setAiThinking(false); setGame(new Chess()); setSelected(null); setLegal([]); setNotice('Time control changed. New game ready.'); }}><option value="3+0">3 + 0</option><option value="5+0">5 + 0</option><option value="10+0">10 + 0</option><option value="15+10">15 + 10</option><option value="30+0">30 + 0</option></select></div>
-            <div className="ai-level-row"><label>BOT DIFFICULTY<select value={botLevel} onChange={event => setBotLevel(Number(event.target.value))}>{Array.from({ length: 10 }, (_, index) => <option key={index + 1} value={index + 1}>Level {index + 1} · {['Newcomer','Casual','Learner','Club','Skilled','Strategist','Advanced','Expert','Master','Elite'][index]}</option>)}</select></label><button onClick={startComputerGame}>{gameMode === 'computer' ? 'Restart bot game' : 'Start bot game'}</button><small className="bot-level-note">{['Very forgiving moves','Learning the basics','Friendly practice','Developing tactics','Solid club play','Plans and combinations','Strong tactical play','Deep positional play','Highest difficulty','Maximum challenge'][botLevel - 1]}</small></div>
+            <div className="ai-level-row"><label>BOT DIFFICULTY<select value={botLevel} onChange={event => setBotLevel(Number(event.target.value))}>{Array.from({ length: 10 }, (_, index) => <option key={index + 1} value={index + 1}>Level {index + 1} · {['Newcomer','Casual','Learner','Club','Skilled','Strategist','Advanced','Expert','Master','Grandmaster'][index]}</option>)}</select></label><button onClick={startComputerGame}>{gameMode === 'computer' ? 'Restart bot game' : 'Start bot game'}</button><small className="bot-level-note">{['Very forgiving moves','Learning the basics','Friendly practice','Developing tactics','Solid club play','Plans and combinations','Strong tactical play','Deep positional play','Strong Stockfish play','Stockfish 19 · maximum strength'][botLevel - 1]}</small></div>
             <div className="sidebar-divider"/>
             <div className="sidebar-heading compact"><div><span className="eyebrow">MAKE YOUR MOVE</span><h2>Explore more</h2></div><button className="text-link" onClick={() => setActiveNav('Learn')}>View all <ArrowRight size={13}/></button></div>
             <div className="explore-grid">
