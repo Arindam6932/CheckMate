@@ -26,8 +26,10 @@ The Vite app runs at `http://localhost:5173`; the realtime server runs at `http:
 - `game:offer-draw`, `game:accept-draw`, `game:decline-draw`.
 - `game:resign`.
 - `game:reconnect`: rejoin an active game during a 60-second disconnect grace period.
+- `call:join`, `call:signal`, `call:leave`: private WebRTC signaling for the two active players only.
+- `GET /ice-servers`: authenticated short-lived TURN credentials.
 
-Every socket connection must present a Firebase ID token with a verified email claim. The server verifies it with the Firebase Admin SDK. Only the two assigned player UIDs may act in a game room; spectator joining is not implemented. The server owns move validation and clock accounting, including increments and timeout outcomes.
+Every socket connection must present a Firebase ID token with a verified email claim. The server verifies it with the Firebase Admin SDK. Only the two assigned player UIDs may act in a game room; spectator joining is not implemented. The server owns move validation and clock accounting, including increments and timeout outcomes. Completed games and provisional Elo updates are written atomically to Firestore; participants can read only their own game records.
 
 ## Current MVP limitations
 
@@ -35,8 +37,8 @@ Every socket connection must present a Firebase ID token with a verified email c
 - Reconnection is supported only while the same server process retains the game room.
 - Private invite codes expire after ten minutes.
 - The 60-second disconnect grace period pauses the clocks. If no player reconnects before it expires, the disconnected side forfeits; if both disconnect, the game is recorded as a draw in the live event.
-- Game records are not yet persisted to Firestore.
-- Production deployment should add Redis-backed Socket.IO adapters/queues, durable game storage, observability, abuse throttling, and load testing before public launch.
+- Active game rooms and matchmaking queues are held in server memory. A server restart loses in-progress games, even though completed records remain in Firestore.
+- Production deployment should add Redis-backed Socket.IO adapters/queues, durable active-game recovery, observability, abuse throttling, and load testing before public launch.
 
 
 ## Private player voice/video
