@@ -113,3 +113,49 @@
 .orientation-options button.active{border-color:var(--user-accent);background:#1e3b2b;color:#b9f0cd}
 .light .orientation-options button{background:#f2f6f1;border-color:#dce7dc;color:#52685a}
 .light .orientation-options button.active{background:#e4f5e8;border-color:#258a57;color:#176a40}
+
+
+/* Settings category navigation and custom image background */
+.settings-category-nav{position:sticky;top:10px;z-index:5;display:flex;gap:7px;overflow-x:auto;padding:9px;margin:0 0 16px;border:1px solid #ffffff16;border-radius:12px;background:#111b17e8;backdrop-filter:blur(18px);scrollbar-width:thin}
+.settings-category-nav a{flex:0 0 auto;padding:8px 11px;border:1px solid #2c4236;border-radius:8px;color:#b4c7ba;text-decoration:none;font-size:9px;font-weight:650}
+.settings-category-nav a:hover{border-color:var(--user-accent);color:var(--user-accent)}
+.custom-background-panel{padding:12px;border:1px solid #2f473a;border-radius:11px;background:#14201b}
+.custom-background-preview{height:150px;border-radius:8px;background-position:center;background-size:cover;position:relative;overflow:hidden}
+.custom-background-preview:after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,#07110ddd,transparent 65%)}
+.custom-background-preview span{position:absolute;z-index:1;bottom:11px;left:12px;color:#fff;font-size:10px;font-weight:700}
+.custom-background-empty{height:130px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;border:1px dashed #466052;border-radius:8px;color:#91b6a0}
+.custom-background-empty b{font-size:10px;color:#dce9e0}.custom-background-empty small{font-size:8px;color:#879a8f}
+.custom-background-actions{display:flex;align-items:center;gap:9px;margin-top:11px;flex-wrap:wrap}
+.custom-background-upload,.custom-background-remove{display:inline-flex;align-items:center;gap:7px;padding:9px 11px;border:1px solid #466052;border-radius:8px;background:#1c3025;color:#c7e7d0;font-size:9px;font-weight:650;cursor:pointer}
+.custom-background-upload input{display:none}
+.custom-background-remove{background:#2b1c1c;border-color:#674545;color:#e6aaaa}
+.custom-background-error{margin:9px 0 0;color:#f0a4a4;font-size:9px}
+.light .settings-category-nav{background:#fffffff0;border-color:#dce7dc}
+.light .settings-category-nav a{background:#f2f6f1;border-color:#dce7dc;color:#52685a}
+.light .settings-category-nav a:hover{border-color:#258a57;color:#258a57}
+.light .custom-background-panel{background:#f7faf6;border-color:#dce7dc}
+.light .custom-background-empty{border-color:#b7d0bd;color:#258a57}
+.light .custom-background-empty b{color:#26392c}.light .custom-background-empty small{color:#68786d}
+.light .custom-background-upload{background:#e4f5e8;border-color:#b8d7bd;color:#176a40}
+.light .custom-background-remove{background:#fbefef;border-color:#e5c5c5;color:#a34d4d}
+.theme-root-frame.background-custom .app-shell,
+.theme-root-frame.background-custom .settings-screen,
+.theme-root-frame.background-custom .puzzles-screen,
+.theme-root-frame.background-custom .learn-screen,
+.theme-root-frame.background-custom .tournaments-screen,
+.theme-root-frame.background-custom .community-screen,
+.theme-root-frame.background-custom .leaderboard-screen,
+.theme-root-frame.background-custom .online-screen,
+.theme-root-frame.background-custom .auth-screen,
+.theme-root-frame.background-custom .profile-screen{background:linear-gradient(135deg,#07110dcc,#07110d88),var(--custom-background-image) center/cover fixed}
+.theme-root-frame.light.background-custom .app-shell,
+.theme-root-frame.light.background-custom .settings-screen,
+.theme-root-frame.light.background-custom .puzzles-screen,
+.theme-root-frame.light.background-custom .learn-screen,
+.theme-root-frame.light.background-custom .tournaments-screen,
+.theme-root-frame.light.background-custom .community-screen,
+.theme-root-frame.light.background-custom .leaderboard-screen,
+.theme-root-frame.light.background-custom .online-screen,
+.theme-root-frame.light.background-custom .auth-screen,
+.theme-root-frame.light.background-custom .profile-screen{background:linear-gradient(135deg,#f4f7f2dd,#f4f7f2aa),var(--custom-background-image) center/cover fixed}
+@media(max-width:520px){.settings-category-nav{top:6px;margin-left:-2px;margin-right:-2px}.custom-background-preview{height:120px}}
