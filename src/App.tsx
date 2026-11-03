@@ -216,8 +216,8 @@ export default function App() {
           <aside className="play-sidebar">
             <div className="sidebar-heading"><div><span className="eyebrow">YOUR NEXT GAME</span><h2>Choose how to play</h2></div><span className="heading-spark">✳</span></div>
             <div className="play-options">
-              <button className="play-card featured" onClick={() => { resetGame(); setNotice('Practice board reset. Play both sides locally.'); }}>
-                <div className="play-icon gold"><Zap size={20}/></div><div className="play-copy"><strong>Practice game</strong><span>Play both sides on this board</span></div><span className="play-arrow"><ArrowRight size={17}/></span><span className="card-glow"/>
+              <button className="play-card featured" onClick={() => navigate('/play-online')}>
+                <div className="play-icon gold"><Zap size={20}/></div><div className="play-copy"><strong>Play online</strong><span>Find a live opponent</span></div><span className="play-arrow"><ArrowRight size={17}/></span><span className="card-glow"/>
               </button>
               <button className="play-card" onClick={() => setNotice('Ranked matchmaking will arrive with the multiplayer phase.')}><div className="play-icon purple"><Trophy size={20}/></div><div className="play-copy"><strong>Ranked</strong><span>Climb the leaderboard</span></div><ChevronRight size={17}/></button>
               <button className="play-card" onClick={() => setNotice('Friend challenges will arrive with social accounts.')}><div className="play-icon blue"><Users size={20}/></div><div className="play-copy"><strong>Play a friend</strong><span>Challenge someone you know</span></div><ChevronRight size={17}/></button>
