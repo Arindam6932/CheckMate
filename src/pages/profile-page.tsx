@@ -10,12 +10,15 @@ export default function ProfilePage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [verified, setVerified] = useState(Boolean(user?.emailVerified));
+  const [verifyBusy, setVerifyBusy] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate('/auth?mode=login', { replace: true });
   }, [loading, user, navigate]);
 
   useEffect(() => { setName(user?.displayName || ''); }, [user?.displayName]);
+  useEffect(() => { setVerified(Boolean(user?.emailVerified)); }, [user?.emailVerified]);
 
   async function save(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError(''); setMessage('');
@@ -25,9 +28,21 @@ export default function ProfilePage() {
   }
 
   async function verify() {
-    setError(''); setMessage('');
+    setError(''); setMessage(''); setVerifyBusy(true);
     try { await resendVerification(); setMessage('A verification email has been sent. Check your inbox.'); }
     catch (err) { setError(err instanceof Error ? err.message : 'Could not send the verification email.'); }
+    finally { setVerifyBusy(false); }
+  }
+
+  async function refreshVerification() {
+    setError(''); setMessage(''); setVerifyBusy(true);
+    try {
+      await user.reload();
+      await user.getIdToken(true);
+      setVerified(user.emailVerified);
+      setMessage(user.emailVerified ? 'Email verified. Online matchmaking is now unlocked.' : 'Email is not verified yet. Open the link in your inbox, then refresh again.');
+    } catch (err) { setError(err instanceof Error ? err.message : 'Could not refresh verification status.'); }
+    finally { setVerifyBusy(false); }
   }
 
   if (loading || !user) return <main className="profile-loading">Loading your player profile…</main>;
@@ -49,8 +64,8 @@ export default function ProfilePage() {
         <button className="auth-submit" type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save profile'} <span>→</span></button>
       </form>
       <div className="profile-security">
-        <div><Mail size={17}/><span><b>Email address</b><small>{user.email}</small></span><em className={user.emailVerified ? 'verified' : 'unverified'}>{user.emailVerified ? 'Verified' : 'Unverified'}</em></div>
-        {!user.emailVerified && <button onClick={verify}>Resend verification email</button>}
+        <div><Mail size={17}/><span><b>Email address</b><small>{user.email}</small></span><em className={user.emailVerified ? 'verified' : 'unverified'}>{verified ? 'Verified' : 'Unverified'}</em></div>
+        {!verified && <div className="verification-actions"><button onClick={verify} disabled={verifyBusy}>Resend verification email</button><button onClick={refreshVerification} disabled={verifyBusy}>I've verified — refresh status</button></div>}
         <div><ShieldCheck size={17}/><span><b>Account security</b><small>Authentication is managed by Firebase.</small></span></div>
       </div>
       {error && <div className="auth-error">{error}</div>}
