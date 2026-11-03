@@ -244,3 +244,65 @@
 .theme-root-frame.light.background-forest .online-screen,
 .theme-root-frame.light.background-forest .auth-screen,
 .theme-root-frame.light.background-forest .profile-screen{background:radial-gradient(ellipse at 25% 0,#d7eadb 0,transparent 46%),#f4f7f2}
+
+
+/* Premium interface refinement */
+.app-shell{isolation:isolate}
+.page-wrap{max-width:1360px;padding-top:44px}
+.welcome-row{position:relative;padding:7px 2px 20px;border-bottom:1px solid #ffffff0b}
+.welcome-row h1{line-height:1.12}
+.welcome-row h1 em{background:linear-gradient(100deg,#a7efc1,#5cc88e 55%,#d9efb7);-webkit-background-clip:text;background-clip:text;color:transparent}
+.main-grid{gap:28px}
+.board-column{padding:17px;background:linear-gradient(145deg,#14201cdd,#0e1714dd);border:1px solid #ffffff12;border-radius:19px;box-shadow:0 24px 70px #0003}
+.chessboard{border:7px solid #1b2c24;box-shadow:0 25px 65px #0009,0 0 0 1px #75d6a12a,0 0 35px #75d6a10a}
+.square{transition:filter .16s ease,background-color .16s ease}
+.square:hover{filter:brightness(1.08)}
+.square.selected{box-shadow:inset 0 0 0 3px #e8f4a7}
+.piece{filter:drop-shadow(0 3px 2px #0007);transition:transform .16s ease,filter .16s ease}
+.square:hover .piece{transform:translateY(-2px) scale(1.08);filter:drop-shadow(0 6px 3px #0007)}
+.play-sidebar{border-radius:19px;background:linear-gradient(150deg,#17241f,#101916);border-color:#ffffff16;box-shadow:0 24px 65px #0003}
+.play-card{min-height:67px;border-radius:13px;padding:13px 14px;background:linear-gradient(115deg,#1c2b25,#18231f);border-color:#ffffff0c}
+.play-card:hover{transform:translateY(-3px);box-shadow:0 10px 24px #0003}
+.play-card.featured{background:linear-gradient(110deg,#254c38,#1b3428 72%,#17271f);border-color:#6fc99766}
+.play-icon{width:41px;height:41px;border-radius:12px}
+.lower-card{border-radius:17px;background:linear-gradient(145deg,#151f1b,#111916);border-color:#ffffff13}
+.stats-row strong{color:#9ce4b7}
+.empty-progress{border:1px solid #ffffff08;background:#1a2922}
+.board-controls{gap:12px}
+.turn-indicator{min-width:0}
+.turn-indicator small{max-width:390px;line-height:1.4}
+.ai-level-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;padding:13px 12px 12px;margin:3px 0 13px;background:linear-gradient(120deg,#1b3025,#17251e);border:1px solid #345a43;border-radius:12px}
+.ai-level-row label{display:flex;flex-direction:column;align-items:flex-start;gap:7px;font-size:8px;letter-spacing:1.2px;color:#a4c5b0}
+.ai-level-row select{width:100%;max-width:none;height:36px;font-size:11px;background:#101b15;border-color:#456c51;color:#e4f5e9}
+.ai-level-row>button{height:36px;padding:0 12px;border:1px solid #5a9c70;border-radius:8px;background:#2b6844;color:#effff3;font-size:10px;font-weight:700;white-space:nowrap}
+.ai-level-row>button:hover{background:#347d51;transform:translateY(-1px)}
+.bot-level-note{grid-column:1/-1;color:#94b5a0;font-size:9px;line-height:1.4}
+.light .board-column{background:linear-gradient(145deg,#fff,#f0f7f1);border-color:#dce9df;box-shadow:0 20px 55px #1b3b2410}
+.light .play-sidebar{background:linear-gradient(145deg,#fff,#f2f8f2);border-color:#dce9df}
+.light .play-card{background:linear-gradient(115deg,#f5f9f5,#edf5ee);border-color:#dce9df}
+.light .play-card.featured{background:linear-gradient(110deg,#e1f5e7,#edf8ef);border-color:#b7dec2}
+.light .lower-card{background:linear-gradient(145deg,#fff,#f7faf6);border-color:#dce9df}
+.light .empty-progress{background:#edf6ee;border-color:#dce9df}
+.light .ai-level-row{background:linear-gradient(120deg,#e8f5eb,#f4faf4);border-color:#c9e3ce}
+.light .ai-level-row label{color:#50715a}
+.light .ai-level-row select{background:#fff;border-color:#c9ddcd;color:#263d2d}
+.light .ai-level-row>button{background:#dff2e4;border-color:#b5d9bd;color:#24643b}
+.light .bot-level-note{color:#66806c}
+.light .welcome-row{border-color:#dce9df}
+@media(max-width:760px){
+  .page-wrap{padding-top:27px}
+  .main-grid{gap:17px}
+  .board-column{padding:11px;border-radius:15px}
+  .play-sidebar{border-radius:15px}
+  .lower-card{border-radius:14px}
+}
+@media(max-width:430px){
+  .ai-level-row{grid-template-columns:1fr}
+  .ai-level-row>button{width:100%}
+  .bot-level-note{grid-column:auto}
+  .board-column{padding:8px}
+  .board-topline{gap:5px}
+}
+@media(hover:none){
+  .play-card:hover,.explore-grid button:hover{transform:none}
+}
