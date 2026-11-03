@@ -28,6 +28,7 @@
 - Account screen at `/auth`.
 - Dedicated setup guide: [docs/AUTHENTICATION_SETUP.md](docs/AUTHENTICATION_SETUP.md).
 - Social model and limitations: [docs/SOCIAL.md](docs/SOCIAL.md).
+- Provisional rating model: [docs/RATINGS.md](docs/RATINGS.md).
 
 ### Real-time multiplayer MVP
 - Socket.IO server with Firebase Admin ID-token verification.
