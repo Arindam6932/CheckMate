@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import {
   ArrowLeft, Check, ChevronRight, CircleHelp, Contrast, Eye, Gamepad2, Headphones,
   LayoutGrid, Monitor, Moon, Palette, RotateCcw, Sparkles, Sun, Volume2,
-  VolumeX, WandSparkles
+  VolumeX, WandSparkles, ImagePlus, Trash2
 } from 'lucide-react';
 import { usePreferences, type Appearance, type BackgroundStyle } from '../context/preferences-context';
 
@@ -32,6 +33,7 @@ const backgrounds: {value:BackgroundStyle;label:string;description:string}[] = [
 
 export default function SettingsPage() {
   const p = usePreferences();
+  const [backgroundError, setBackgroundError] = useState('');
   const presets = [
     {name:'Jade room',apply:()=>{p.setAppearance('dark');p.setAccentColor('#75d6a1');p.setBackgroundStyle('aurora');p.setBoardTheme('emerald');p.setPieceSet('classic');p.setCustomBoardColors(false);}},
     {name:'Royal club',apply:()=>{p.setAppearance('dark');p.setAccentColor('#d4b36a');p.setBackgroundStyle('midnight');p.setBoardTheme('walnut');p.setPieceSet('royal');p.setCustomBoardColors(false);}},
@@ -47,6 +49,13 @@ export default function SettingsPage() {
     <section className="settings-content">
       <div className="settings-title"><div className="settings-title-icon"><WandSparkles size={21}/></div><div><span className="online-eyebrow">YOUR BOARD. YOUR RULES.</span><h1>Personalise CHECKMATE</h1><p>Fine-tune the look, feel, board and playing experience. Changes save automatically on this device.</p></div></div>
 
+      <nav className="settings-category-nav" aria-label="Settings categories"><a href="#app-settings">App settings</a><a href="#appearance">Appearance</a><a href="#gameplay">Gameplay</a><a href="#board">Board & pieces</a><a href="#sound">Sound & motion</a></nav>
+
+      <section className="studio-card" id="app-settings">
+        <div className="studio-heading"><div><Monitor size={17}/><b>App settings</b></div><small>Set the overall interface density and behaviour</small></div>
+        {toggle('Compact app layout','Use tighter spacing in supported app screens',p.compactMode,p.setCompactMode,<LayoutGrid size={16}/>)}
+      </section>
+
       <section className="studio-card">
         <div className="studio-heading"><div><Sparkles size={17}/><b>One-tap style presets</b></div><small>Start with a complete look, then customise every detail</small></div>
         <div className="studio-presets">{presets.map(preset=><button key={preset.name} onClick={preset.apply} className="studio-preset"><span className={'preset-art preset-'+preset.name.toLowerCase().replace(' ','-')}/><b>{preset.name}</b><ChevronRight size={13}/></button>)}</div>
@@ -59,6 +68,15 @@ export default function SettingsPage() {
         <div className="accent-options">{accents.map(([label,color])=><button key={label} title={label} aria-label={label+' accent'} className={p.accentColor.toLowerCase()===color.toLowerCase()?'accent-swatch selected':'accent-swatch'} style={{'--swatch':color} as CSSProperties & {'--swatch': string}} onClick={()=>p.setAccentColor(color)}>{p.accentColor.toLowerCase()===color.toLowerCase()&&<Check size={14}/>}</button>)}<label className="custom-color"><input type="color" value={p.accentColor} onChange={e=>p.setAccentColor(e.target.value)}/><span>Custom</span></label></div>
         <div className="studio-subheading"><b>Background atmosphere</b><small>Change the mood behind your panels</small></div>
         <div className="background-options">{backgrounds.map(item=><button key={item.value} onClick={()=>p.setBackgroundStyle(item.value)} className={p.backgroundStyle===item.value?'background-choice active':'background-choice'}><span className={'background-art background-art-'+item.value}/><b>{item.label}</b><small>{item.description}</small></button>)}</div>
+        <div className="studio-subheading"><b>Your own background image</b><small>Upload a JPG, PNG or WebP image (up to 1.5 MB). It stays on this browser.</small></div>
+        <div className="custom-background-panel">
+          {p.customBackground ? <div className="custom-background-preview" style={{backgroundImage:`url("${p.customBackground}")`}}><span>Custom image active</span></div> : <div className="custom-background-empty"><ImagePlus size={22}/><b>Make CHECKMATE yours</b><small>Choose an image from your device</small></div>}
+          <div className="custom-background-actions">
+            <label className="custom-background-upload"><ImagePlus size={14}/> {p.customBackground?'Change image':'Upload image'}<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>{const file=e.target.files?.[0];if(!file)return;setBackgroundError('');if(!['image/png','image/jpeg','image/webp'].includes(file.type)){setBackgroundError('Choose a JPG, PNG or WebP image.');e.currentTarget.value='';return;}if(file.size>1.5*1024*1024){setBackgroundError('Image is too large. Maximum file size is 1.5 MB.');e.currentTarget.value='';return;}const reader=new FileReader();reader.onload=()=>{if(typeof reader.result==='string'){p.setCustomBackground(reader.result);p.setBackgroundStyle('custom');}};reader.onerror=()=>setBackgroundError('Could not read this image. Please try another file.');reader.readAsDataURL(file);e.currentTarget.value='';}}/></label>
+            {p.customBackground&&<button type="button" className="custom-background-remove" onClick={()=>{p.setCustomBackground('');p.setBackgroundStyle('aurora');setBackgroundError('');}}><Trash2 size={13}/> Remove image</button>}
+          </div>
+          {backgroundError&&<p className="custom-background-error" role="alert">{backgroundError}</p>}
+        </div>
       </section>
 
       <section className="studio-card" id="board">
@@ -83,7 +101,6 @@ export default function SettingsPage() {
         {toggle('Board coordinates','Show file letters and rank numbers',p.showCoordinates,p.setShowCoordinates,<Eye size={16}/>)}
         {toggle('Legal move hints','Show available destination squares after selecting a piece',p.showLegalMoves,p.setShowLegalMoves,<CircleHelp size={16}/>)}
         {toggle('Last move highlight','Highlight the previous move on boards that support it',p.highlightLastMove,p.setHighlightLastMove,<Sparkles size={16}/>)}
-        {toggle('Compact interface','Reduce spacing in supported panels and controls',p.compactMode,p.setCompactMode,<LayoutGrid size={16}/>)}
         <div className="studio-subheading"><b>Default board orientation</b><small>Homepage practice board: which side should appear at the bottom?</small></div>
         <div className="orientation-options"><button className={p.boardOrientation==='white'?'active':''} onClick={()=>p.setBoardOrientation('white')}>♙ White at bottom</button><button className={p.boardOrientation==='black'?'active':''} onClick={()=>p.setBoardOrientation('black')}>♟ Black at bottom</button></div>
         {toggle('Show move list by default','Open the notation panel when the homepage loads',p.showMoveList,p.setShowMoveList,<LayoutGrid size={16}/>)}
