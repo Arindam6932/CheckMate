@@ -9,7 +9,8 @@ CHECKMATE authentication and data are deliberately isolated from AgriSence. The 
 3. Enable **Authentication → Sign-in method → Email/Password**.
 4. Enable Google as a provider and configure its support email and OAuth consent details.
 5. Create a Cloud Firestore database in production mode.
-6. Add the Web App configuration values to a local `.env` file using `.env.example` as the template.
+6. Create the project's default Firebase Storage bucket (choose a region and billing/plan settings appropriate for your project).
+7. Add the Web App configuration values to a local `.env` file using `.env.example` as the template, including the exact Storage bucket name shown in Firebase Console.
 
 Never copy AgriSence service-account keys, API secrets, project IDs, or production database configuration into CHECKMATE.
 
@@ -23,11 +24,13 @@ Restart both the Vite and realtime server processes after changing environment v
 
 ## 3. Deploy Firestore rules
 
-Review and deploy the repository's Firestore configuration to the CHECKMATE Firebase project:
+Review and deploy the repository's Firestore and Storage rules to the CHECKMATE Firebase project:
 
 ```bash
-firebase deploy --only firestore:rules
+firebase deploy --only firestore:rules,storage
 ```
+
+Account preferences are stored in `players/{uid}/settings/preferences`. Background images are uploaded to `players/{uid}/backgrounds/` in Firebase Storage. Both paths are owner-restricted by the deployed rules. The browser stores only the current in-memory settings; it does not use localStorage as the source of truth.
 
 The rules currently cover:
 - Owner-only private player profiles.
@@ -49,6 +52,7 @@ The Firebase Admin SDK bypasses client rules; secure server-side credentials and
 - Password reset email.
 - Firebase-managed persistent authentication session.
 - Private `players/{uid}` and minimal `publicProfiles/{uid}` documents.
+- Account-synced personalisation preferences in Firestore and owner-only custom background image uploads in Firebase Storage.
 - Editable display name and account profile at `/profile`.
 - Online matchmaking and player calls require a verified email claim.
 
