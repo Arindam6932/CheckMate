@@ -9,6 +9,10 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == uid;
     }
 
+    function isMember(members) {
+      return signedIn() && request.auth.uid in members;
+    }
+
     match /players/{uid} {
       allow read: if ownsPlayer(uid);
       allow create: if ownsPlayer(uid)
@@ -23,6 +27,90 @@ service cloud.firestore {
           'displayName', 'photoURL', 'updatedAt'
         ]);
       allow delete: if false;
+    }
+
+    match /publicProfiles/{uid} {
+      allow read: if signedIn();
+      allow create: if ownsPlayer(uid)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'uid', 'displayName', 'photoURL', 'createdAt', 'updatedAt'
+        ]);
+      allow update: if ownsPlayer(uid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'displayName', 'photoURL', 'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    match /friendRequests/{requestId} {
+      allow read: if signedIn()
+        && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.toUid is string
+        && request.resource.data.toUid != request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.keys().hasOnly([
+          'fromUid', 'toUid', 'status', 'createdAt', 'updatedAt'
+        ]);
+      allow update: if signedIn()
+        && resource.data.toUid == request.auth.uid
+        && resource.data.status == 'pending'
+        && request.resource.data.status in ['accepted', 'rejected']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    match /friends/{friendId} {
+      allow read: if isMember(resource.data.members);
+      allow create: if signedIn()
+        && request.resource.data.members is list
+        && request.resource.data.members.size() == 2
+        && isMember(request.resource.data.members)
+        && request.resource.data.keys().hasOnly(['members', 'requestId', 'createdAt'])
+        && getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.status == 'accepted'
+        && getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.fromUid in request.resource.data.members
+        && getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.toUid in request.resource.data.members;
+      allow update: if false;
+      allow delete: if isMember(resource.data.members);
+    }
+
+    match /conversations/{conversationId} {
+      allow read: if isMember(resource.data.members)
+        && exists(/databases/$(database)/documents/friends/$(conversationId));
+      allow create: if isMember(request.resource.data.members)
+        && request.resource.data.members is list
+        && request.resource.data.members.size() == 2
+        && exists(/databases/$(database)/documents/friends/$(conversationId))
+        && request.resource.data.keys().hasOnly([
+          'members', 'createdAt', 'updatedAt', 'lastMessage', 'lastMessageAt'
+        ]);
+      allow update: if isMember(resource.data.members)
+        && exists(/databases/$(database)/documents/friends/$(conversationId))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'lastMessage', 'lastMessageAt', 'updatedAt'
+        ]);
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        function conversationMember() {
+          return signedIn()
+            && exists(/databases/$(database)/documents/conversations/$(conversationId))
+            && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.members
+            && exists(/databases/$(database)/documents/friends/$(conversationId));
+        }
+        allow read: if conversationMember();
+        allow create: if conversationMember()
+          && request.resource.data.senderUid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 2000
+          && request.resource.data.keys().hasOnly(['senderUid', 'text', 'createdAt'])
+          && request.resource.data.createdAt == request.time;
+        allow update, delete: if false;
+      }
     }
 
     match /games/{gameId} {
