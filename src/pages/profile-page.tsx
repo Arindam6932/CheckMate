@@ -35,6 +35,7 @@ export default function ProfilePage() {
   }
 
   async function refreshVerification() {
+    if (!user) return;
     setError(''); setMessage(''); setVerifyBusy(true);
     try {
       await user.reload();
