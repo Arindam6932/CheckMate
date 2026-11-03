@@ -166,14 +166,15 @@ io.on('connection', (socket: PlayerSocket) => {
     if (room.chess.turn() !== color) return sendError(socket, 'It is not your turn.');
     const now = Date.now();
     const elapsed = now - room.lastMoveAt;
-    if (color === 'w') room.whiteTimeMs -= elapsed; else room.blackTimeMs -= elapsed;
-    if ((color === 'w' ? room.whiteTimeMs : room.blackTimeMs) <= 0) {
+    const remainingAfterElapsed = (color === 'w' ? room.whiteTimeMs : room.blackTimeMs) - elapsed;
+    if (remainingAfterElapsed <= 0) {
+      if (color === 'w') room.whiteTimeMs = 0; else room.blackTimeMs = 0;
       room.status = 'finished';
       io.to(room.id).emit('game:ended', {
         result: color === 'w' ? 'black-wins' : 'white-wins',
         reason: 'timeout',
-        whiteTimeMs: Math.max(0, room.whiteTimeMs),
-        blackTimeMs: Math.max(0, room.blackTimeMs),
+        whiteTimeMs: room.whiteTimeMs,
+        blackTimeMs: room.blackTimeMs,
         pgn: room.chess.pgn(),
       });
       return;
@@ -188,7 +189,8 @@ io.on('connection', (socket: PlayerSocket) => {
         room.drawOfferBy = null;
         socket.to(room.id).emit('game:draw-declined');
       }
-      if (color === 'w') room.whiteTimeMs += room.incrementMs; else room.blackTimeMs += room.incrementMs;
+      if (color === 'w') room.whiteTimeMs = remainingAfterElapsed + room.incrementMs;
+      else room.blackTimeMs = remainingAfterElapsed + room.incrementMs;
       room.lastMoveAt = Date.now();
       if (room.chess.isGameOver()) room.status = 'finished';
       io.to(gameId).emit('game:state', {
