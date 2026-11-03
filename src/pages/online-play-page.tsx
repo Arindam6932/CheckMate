@@ -49,10 +49,10 @@ export default function OnlinePlayPage() {
         setMatch(data); setBusy(false); setPaused(false); setClocks({ white: data.whiteTimeMs, black: data.blackTimeMs }); setGame(new Chess(data.fen)); setSelected(null); setLegal([]);
         setStatus(data.color === 'w' ? 'You are playing White.' : 'You are playing Black.');
       });
-      socket.on('game:state', (data: { fen: string; pgn: string; check: boolean; checkmate: boolean; draw: boolean; gameOver: boolean; whiteTimeMs: number; blackTimeMs: number }) => {
+      socket.on('game:state', (data: { fen: string; pgn: string; check: boolean; checkmate: boolean; draw: boolean; gameOver: boolean; whiteTimeMs: number; blackTimeMs: number; paused?: boolean }) => {
         const next = new Chess();
         if (data.pgn) next.loadPgn(data.pgn); else next.load(data.fen);
-        setGame(next); setSelected(null); setLegal([]); setPaused(false); setClocks({ white: data.whiteTimeMs, black: data.blackTimeMs });
+        setGame(next); setSelected(null); setLegal([]); setPaused(Boolean(data.paused)); setClocks({ white: data.whiteTimeMs, black: data.blackTimeMs });
         setStatus(data.checkmate ? 'Checkmate — game finished.' : data.draw ? 'Draw — game finished.' : data.check ? 'Check.' : 'Game in progress.');
       });
       socket.on('game:ended', (data: { result: string; reason: string; whiteTimeMs?: number; blackTimeMs?: number }) => { setPaused(true); if (data.whiteTimeMs !== undefined && data.blackTimeMs !== undefined) setClocks({ white: data.whiteTimeMs, black: data.blackTimeMs }); setStatus(data.result === 'draw' ? 'Draw agreed.' : `Game ended: ${data.reason}.`); });
