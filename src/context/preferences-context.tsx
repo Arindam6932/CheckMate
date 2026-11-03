@@ -123,32 +123,40 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   async function uploadCustomBackground(file: File) {
     setSyncStatus('saving');
     const user = auth?.currentUser;
-    if (!user || !storage || !db) throw new Error('Sign in to upload and sync a background image.');
+    if (!user || !db) { setSyncStatus('signed-out'); throw new Error('Sign in to upload and sync a background image.'); }
+    if (!storage) { setSyncStatus('error'); throw new Error('Firebase Storage is not configured. Set VITE_FIREBASE_STORAGE_BUCKET and create the project Storage bucket.'); }
     if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) throw new Error('Choose a JPG, PNG or WebP image.');
     if (file.size > 5 * 1024 * 1024) throw new Error('Image must be 5 MB or smaller.');
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-').slice(-80) || 'background';
     const path = `players/${user.uid}/backgrounds/${Date.now()}-${safeName}`;
     const uploaded = ref(storage, path);
-    await uploadBytes(uploaded, file, { contentType: file.type, cacheControl: 'public,max-age=3600' });
-    const url = await getDownloadURL(uploaded);
-    const oldPath = backgroundPath;
-    const { customBackground, ...currentSettings } = prefs;
-    await setDoc(settingsRef(user.uid), {
-      ...currentSettings, customBackgroundUrl: url, customBackgroundPath: path,
-      backgroundStyle: 'custom', updatedAt: serverTimestamp(),
-    }, { merge: true });
-    setBackgroundPath(path);
-    setPrefs(current => ({ ...current, customBackground: url, backgroundStyle: 'custom' }));
-    if (oldPath && oldPath !== path) {
-      try { await deleteObject(ref(storage, oldPath)); } catch { /* Old image cleanup can be retried separately. */ }
+    try {
+      await uploadBytes(uploaded, file, { contentType: file.type, cacheControl: 'public,max-age=3600' });
+      const url = await getDownloadURL(uploaded);
+      const oldPath = backgroundPath;
+      const { customBackground, ...currentSettings } = prefs;
+      await setDoc(settingsRef(user.uid), {
+        ...currentSettings, customBackgroundUrl: url, customBackgroundPath: path,
+        backgroundStyle: 'custom', updatedAt: serverTimestamp(),
+      }, { merge: true });
+      setBackgroundPath(path);
+      setPrefs(current => ({ ...current, customBackground: url, backgroundStyle: 'custom' }));
+      if (oldPath && oldPath !== path) {
+        try { await deleteObject(ref(storage, oldPath)); } catch { /* Old image cleanup can be retried separately. */ }
+      }
+      setSyncStatus('synced');
+    } catch (error) {
+      try { await deleteObject(uploaded); } catch { /* No uploaded object to clean up. */ }
+      setSyncStatus('error');
+      throw error;
     }
-    setSyncStatus('synced');
   }
 
   async function removeCustomBackground() {
     setSyncStatus('saving');
     const user = auth?.currentUser;
-    if (!user || !storage || !db) throw new Error('Sign in to manage your background image.');
+    if (!user || !db) { setSyncStatus('signed-out'); throw new Error('Sign in to manage your background image.'); }
+    if (!storage) { setSyncStatus('error'); throw new Error('Firebase Storage is not configured. Set VITE_FIREBASE_STORAGE_BUCKET.'); }
     const oldPath = backgroundPath;
     const { customBackground, ...currentSettings } = prefs;
     await setDoc(settingsRef(user.uid), {
