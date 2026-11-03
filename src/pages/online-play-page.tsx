@@ -6,6 +6,7 @@ import { ArrowLeft, Copy, LogOut, Radio, Swords, Users } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
 import { connectMultiplayer } from '../lib/multiplayer';
 import PrivateCall from '../components/private-call';
+import { usePreferences } from '../context/preferences-context';
 
 type MatchInfo = { gameId: string; color: 'w' | 'b'; opponentUid: string; timeControl: string; whiteTimeMs: number; blackTimeMs: number };
 const formatOnlineClock = (milliseconds: number) => {
@@ -16,6 +17,7 @@ const glyph: Record<string, string> = { wk:'♔',wq:'♕',wr:'♖',wb:'♗',wn:'
 
 export default function OnlinePlayPage() {
   const { user, loading } = useAuth();
+  const { autoQueen, boardOrientation } = usePreferences();
   const navigate = useNavigate();
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
@@ -31,6 +33,7 @@ export default function OnlinePlayPage() {
   const [clocks, setClocks] = useState({ white: 600_000, black: 600_000 });
   const [paused, setPaused] = useState(false);
   const [drawOffered, setDrawOffered] = useState(false);
+  const [pendingPromotion, setPendingPromotion] = useState<{ from: Square; to: Square } | null>(null);
 
   useEffect(() => {
     if (!loading && !user) navigate('/auth?mode=login', { replace: true });
@@ -48,13 +51,13 @@ export default function OnlinePlayPage() {
       socket.on('queue:waiting', () => setStatus('Searching for an opponent…'));
       socket.on('queue:left', () => setStatus('Matchmaking cancelled.'));
       socket.on('match:found', (data: MatchInfo & { fen: string }) => {
-        setMatch(data); setBusy(false); setPaused(false); setClocks({ white: data.whiteTimeMs, black: data.blackTimeMs }); setGame(new Chess(data.fen)); setSelected(null); setLegal([]);
+        setMatch(data); setBusy(false); setPaused(false); setClocks({ white: data.whiteTimeMs, black: data.blackTimeMs }); setGame(new Chess(data.fen)); setSelected(null); setLegal([]); setPendingPromotion(null);
         setStatus(data.color === 'w' ? 'You are playing White.' : 'You are playing Black.');
       });
       socket.on('game:state', (data: { fen: string; pgn: string; check: boolean; checkmate: boolean; draw: boolean; gameOver: boolean; whiteTimeMs: number; blackTimeMs: number; paused?: boolean }) => {
         const next = new Chess();
         if (data.pgn) next.loadPgn(data.pgn); else next.load(data.fen);
-        setGame(next); setSelected(null); setLegal([]); setPaused(Boolean(data.paused)); setClocks({ white: data.whiteTimeMs, black: data.blackTimeMs });
+        setGame(next); setSelected(null); setLegal([]); setPendingPromotion(null); setPaused(Boolean(data.paused)); setClocks({ white: data.whiteTimeMs, black: data.blackTimeMs });
         setStatus(data.checkmate ? 'Checkmate — game finished.' : data.draw ? 'Draw — game finished.' : data.check ? 'Check.' : 'Game in progress.');
       });
       socket.on('game:ended', (data: { result: string; reason: string; whiteTimeMs?: number; blackTimeMs?: number }) => { setPaused(true); setDrawOffered(false); if (data.whiteTimeMs !== undefined && data.blackTimeMs !== undefined) setClocks({ white: data.whiteTimeMs, black: data.blackTimeMs }); setStatus(data.result === 'draw' ? 'Draw agreed.' : `Game ended: ${data.reason}.`); });
@@ -101,6 +104,10 @@ export default function OnlinePlayPage() {
     const piece = game.get(square);
     if (selected && legal.includes(square)) {
       const promotion = game.moves({ verbose: true }).find(move => move.from === selected && move.to === square && move.promotion);
+      if (promotion && !autoQueen) {
+        setPendingPromotion({ from: selected, to: square });
+        setSelected(null); setLegal([]); return;
+      }
       socketRef.current?.emit('game:move', { gameId: match.gameId, from: selected, to: square, ...(promotion ? { promotion: 'q' } : {}) });
       setSelected(null); setLegal([]); return;
     }
@@ -110,9 +117,10 @@ export default function OnlinePlayPage() {
   }
 
   const rows = game.board();
-  const displayRows = match?.color === 'b' ? [...rows].reverse().map(row => [...row].reverse()) : rows;
-  const files = match?.color === 'b' ? 'hgfedcba'.split('') : 'abcdefgh'.split('');
-  const ranks = match?.color === 'b' ? [1,2,3,4,5,6,7,8] : [8,7,6,5,4,3,2,1];
+  const flipBoard = boardOrientation === 'black';
+  const displayRows = flipBoard ? [...rows].reverse().map(row => [...row].reverse()) : rows;
+  const files = flipBoard ? 'hgfedcba'.split('') : 'abcdefgh'.split('');
+  const ranks = flipBoard ? [1,2,3,4,5,6,7,8] : [8,7,6,5,4,3,2,1];
 
   if (loading || !user) return <main className="online-loading">Loading online play…</main>;
 
@@ -136,6 +144,7 @@ export default function OnlinePlayPage() {
           }))}
         </div><div className="online-coords">{ranks.map(rank=><span key={rank}>{rank}</span>)}</div></div> : <div className="online-empty-board"><span>♞</span><b>Your next opponent is out there.</b><p>Find a rated or casual match, or invite a friend with a private code.</p></div>}
         <div className="online-game-status"><Radio size={15}/>{status}</div>
+        {pendingPromotion && <div className="online-game-actions" role="group" aria-label="Choose promotion piece"><span>Promote pawn to:</span>{(['q','r','b','n'] as const).map(piece=><button key={piece} onClick={()=>{if(match){socketRef.current?.emit('game:move',{gameId:match.gameId,from:pendingPromotion.from,to:pendingPromotion.to,promotion:piece});setPendingPromotion(null);}}}>{({q:'♛ Queen',r:'♜ Rook',b:'♝ Bishop',n:'♞ Knight'})[piece]}</button>)}</div>}
         {match && socketRef.current && <PrivateCall socket={socketRef.current} gameId={match.gameId}/>}
         {match && <div className="online-game-actions">{drawOffered ? <><button onClick={()=>{socketRef.current?.emit('game:accept-draw',{gameId:match.gameId});setDrawOffered(false);}}>Accept draw</button><button onClick={()=>{socketRef.current?.emit('game:decline-draw',{gameId:match.gameId});setDrawOffered(false);}}>Decline</button></> : <button onClick={()=>socketRef.current?.emit('game:offer-draw',{gameId:match.gameId})}>Offer draw</button>}<button className="resign" onClick={()=>socketRef.current?.emit('game:resign',{gameId:match.gameId})}>Resign</button></div>}
       </section>
