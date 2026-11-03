@@ -90,7 +90,7 @@ export default function GameHistoryPage() {
             <span className={`history-result ${result.toLowerCase()}`}>{result}</span>
             <div className="history-match"><b>{myColor} vs {opponent.slice(0,8)}…</b><span>{record.timeControl} · {record.moveCount} plies · {record.reason.replace(/-/g, ' ')}</span></div>
             <time>{record.finishedAt?.toDate().toLocaleDateString() || 'Recently'}</time>
-            <span className="history-open">View PGN →</span>
+            <span className="history-open">Replay / PGN →</span>
           </button>;
         })}
       </div>}
