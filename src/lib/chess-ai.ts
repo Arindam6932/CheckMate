@@ -25,7 +25,7 @@ function negamax(game: Chess, depth: number, alpha: number, beta: number): numbe
   const moves = game.moves({ verbose: true });
   for (const move of moves) {
     const next = new Chess(game.fen());
-    next.move({ from: move.from, to: move.to, ...(move.promotion ? { promotion: move.promotion } : {}) });
+    next.move({ from: move.from, to: move.to, ...(move.promotion ? { promotion: move.promotion as 'q' | 'r' | 'b' | 'n' } : {}) });
     const score = -negamax(next, depth - 1, -beta, -alpha);
     best = Math.max(best, score);
     alpha = Math.max(alpha, score);
@@ -46,7 +46,7 @@ export function findBestMove(game: Chess, depth = 2): EngineMove | null {
     const score = -negamax(next, Math.max(0, depth - 1), -beta, -alpha);
     if (score > bestScore) {
       bestScore = score;
-      bestMove = { from: move.from, to: move.to, ...(move.promotion ? { promotion: move.promotion } : {}) };
+      bestMove = { from: move.from, to: move.to, ...(move.promotion ? { promotion: move.promotion as 'q' | 'r' | 'b' | 'n' } : {}) };
     }
     alpha = Math.max(alpha, score);
   }
