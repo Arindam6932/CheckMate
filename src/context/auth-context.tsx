@@ -4,7 +4,7 @@ import {
   sendEmailVerification, sendPasswordResetEmail, signInWithEmailAndPassword,
   signInWithPopup, signOut, updateProfile, type User,
 } from 'firebase/auth';
-import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db, firebaseConfigured } from '../lib/firebase';
 
 type AuthContextValue = {
@@ -23,16 +23,27 @@ const unavailable = () => new Error('Authentication is not configured yet. Add t
 
 async function savePlayerProfile(user: User, displayName?: string) {
   if (!db) throw unavailable();
-  await setDoc(doc(db, 'players', user.uid), {
+  const profileRef = doc(db, 'players', user.uid);
+  const existing = await getDoc(profileRef);
+  const profileName = displayName || user.displayName || 'Player';
+  if (existing.exists()) {
+    await updateDoc(profileRef, {
+      displayName: profileName,
+      photoURL: user.photoURL || '',
+      updatedAt: serverTimestamp(),
+    });
+    return;
+  }
+  await setDoc(profileRef, {
     uid: user.uid,
-    displayName: displayName || user.displayName || 'Player',
+    displayName: profileName,
     email: user.email || '',
     photoURL: user.photoURL || '',
     emailVerified: user.emailVerified,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     profileVersion: 1,
-  }, { merge: true });
+  });
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
