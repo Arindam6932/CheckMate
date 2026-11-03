@@ -39,7 +39,7 @@
 - Authentication, account-synced settings, and online play require a dedicated CHECKMATE Firebase project. Custom backgrounds additionally require the project's Firebase Storage bucket and deployed Storage rules. Online play requires server-side Firebase Admin credentials. AgriSence credentials and databases are never reused.
 - Active online games and matchmaking queues are held in server memory; server restarts lose in-progress games.
 - Tournament registration and withdrawal are verified by the realtime server; capacity is enforced transactionally. Automated pairings, standings, rounds, and result adjudication are still planned.
-- The Elo model is provisional; no Glicko-2, anti-cheat review, seasonal resets, or rated/casual split yet. All online matches currently affect ratings.
+- Rated and casual matchmaking are separated; only rated public matchmaking changes Elo. The Elo model remains provisional, with no Glicko-2, anti-cheat review, or seasonal resets yet.
 - The computer opponent is a lightweight local search engine, not Stockfish. Engine analysis and post-game review are still planned.
 - Spectator mode, clubs, attachments, moderation tools, admin dashboard, and premium subscriptions are not implemented yet.
 - WebRTC uses STUN by default. Production calls require a TURN service, HTTPS, network testing, and monitoring.
