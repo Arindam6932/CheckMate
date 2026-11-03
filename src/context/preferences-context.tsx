@@ -239,6 +239,6 @@ export function ThemeFrame({ children }: { children: ReactNode }) {
     showCoordinates ? '' : 'hide-coordinates', showLegalMoves ? '' : 'hide-legal-hints',
     highlightLastMove ? '' : 'hide-last-move', compactMode ? 'compact-mode' : '',
     highContrast ? 'high-contrast' : '',
-    customBoardColors ? 'custom-board-colors' : '', 'background-' + backgroundStyle].filter(Boolean).join(' ');
+    customBoardColors ? 'custom-board-colors' : '', 'board-theme-' + prefs.boardTheme, 'piece-set-' + prefs.pieceSet, 'background-' + backgroundStyle].filter(Boolean).join(' ');
   return <div className={classes}>{children}</div>;
 }
