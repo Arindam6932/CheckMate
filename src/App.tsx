@@ -32,7 +32,7 @@ const formatClock = (seconds: number) => `${Math.floor(seconds / 60).toString().
 export default function App() {
   const navigate = useNavigate();
   const { user, logOut } = useAuth();
-  const { isDark, appearance, setAppearance, boardTheme, setBoardTheme, pieceSet, setPieceSet } = usePreferences();
+  const { isDark, setAppearance, boardTheme, setBoardTheme, pieceSet, setPieceSet } = usePreferences();
   const [game, setGame] = useState(initialGame);
   const [selected, setSelected] = useState<Square | null>(null);
   const [legal, setLegal] = useState<Square[]>([]);
@@ -172,7 +172,7 @@ export default function App() {
       <main className="page-wrap">
         <section className="welcome-row">
           <div><div className="eyebrow"><span className="live-dot"/> THE BOARD IS YOURS</div><h1>Make your next move <em>legendary.</em></h1><p>A place to play boldly, learn deeply, and find your people.</p></div>
-          <div className="welcome-right"><div className="streak-chip"><Flame size={15}/> <b>0</b> day streak</div><button className="theme-toggle" onClick={() => setDarkMode(!darkMode)} aria-label="Toggle appearance">{darkMode ? <Moon size={17}/> : <Sparkles size={17}/>}</button></div>
+          <div className="welcome-right"><div className="streak-chip"><Flame size={15}/> <b>0</b> day streak</div><button className="theme-toggle" onClick={() => setAppearance(isDark ? 'light' : 'dark')} aria-label="Toggle appearance">{isDark ? <Moon size={17}/> : <Sparkles size={17}/>}</button></div>
         </section>
 
         <section className="main-grid">
