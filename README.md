@@ -2,21 +2,33 @@
 
 **The game, reimagined.** A chess platform for competitive play, learning, community, and analysis.
 
-## Current build — Phase 1
+## Current build
 
-- Responsive React + TypeScript + Vite application.
-- Premium dark interface with a light appearance toggle.
+### Application foundation
+- React + TypeScript + Vite.
+- Graphite/jade dark theme and matching light appearance.
 - Interactive local chessboard powered by `chess.js`.
 - Legal move highlighting, move history, undo, restart, and board flip.
-- Navigation entry points for play, puzzles, learning, watch, community, and tournaments.
-- Responsive mobile layout and reduced-motion support.
+- Responsive navigation and mobile layout.
 
-The navigation and account menu currently contain clearly labelled future-phase entry points. Online matchmaking, accounts, chat, and engine analysis are **not** live yet.
+### Account foundation
+- Firebase email/password registration and sign-in.
+- Email verification email on registration.
+- Google sign-in.
+- Password reset email.
+- Firebase-managed sessions.
+- Owner-restricted Firestore player profile documents.
+- Account screen at `/auth`.
+- Dedicated setup guide: [docs/AUTHENTICATION_SETUP.md](docs/AUTHENTICATION_SETUP.md).
+
+Authentication is wired but remains disabled until a **separate CHECKMATE Firebase project** is configured. No AgriSence credentials or databases are used.
 
 ## Run locally
 
 ```bash
 npm install
+cp .env.example .env
+# Add the CHECKMATE Firebase Web App values to .env
 npm run dev
 ```
 
@@ -27,22 +39,25 @@ npm run build
 npm run preview
 ```
 
+GitHub Actions runs the TypeScript/Vite production build on pushes and pull requests to `main`.
+
 ## Roadmap
 
-1. Foundation and independent authentication.
-2. Player profiles, settings, and onboarding.
-3. Multiplayer game sessions and matchmaking.
-4. Friends, messaging, and private player-to-player voice/video.
-5. Ratings, game history, leaderboards, and tournaments.
-6. Puzzles, learning academy, and opening explorer.
-7. Stockfish analysis and post-game review.
-8. Fair-play systems, moderation, accessibility, and production hardening.
+1. Foundation, CI, and independent authentication.
+2. Player profiles, settings, onboarding, and account security.
+3. Complete local chess experience, clocks, notation, and game controls.
+4. Real-time multiplayer game sessions and matchmaking.
+5. Friends, messaging, and private player-to-player voice/video.
+6. Ratings, game history, leaderboards, and tournaments.
+7. Puzzles, learning academy, and opening explorer.
+8. Stockfish analysis and post-game review.
+9. Fair-play systems, moderation, accessibility, and production hardening.
 
 ## Security and product principles
 
-- CHECKMATE will use its **own Firebase project, credentials, and user data**. AgriSence production credentials and databases must never be reused.
-- Authentication will be adapted from the AgriSence implementation only when its source files are available for review.
+- CHECKMATE uses its **own Firebase project, credentials, and user data**. AgriSence production credentials and databases must never be reused.
+- Client-side Firebase configuration is not a security boundary; Firestore rules enforce profile ownership.
 - Rated live games will not permit engine assistance.
 - In-game calls are limited to the two active players; spectators cannot join private calls.
 - Audio/video are off by default, permissions are explicit, and recording is off by default.
-- The core experience launches free; premium functionality can be added later without blocking the initial product.
+- The core experience launches free; premium functionality can be added later.
