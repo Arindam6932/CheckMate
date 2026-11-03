@@ -100,6 +100,12 @@ function getPlayerColor(room: GameRoom, uid: string): 'w' | 'b' | null {
   return null;
 }
 
+function hasActiveGame(uid: string): boolean {
+  return [...games.values()].some(room =>
+    room.status === 'active' && (room.whiteUid === uid || room.blackUid === uid)
+  );
+}
+
 function sendError(socket: PlayerSocket, message: string) {
   socket.emit('game:error', { message });
 }
@@ -228,6 +234,7 @@ io.on('connection', (socket: PlayerSocket) => {
     if (!allowRate(socket, 'queue:join', 12, 60_000)) return sendError(socket, 'Too many matchmaking requests. Please wait a moment.');
     const control = payload.timeControl;
     if (!validTimeControl(control)) return sendError(socket, 'Choose a supported time control.');
+    if (hasActiveGame(socket.data.uid as string)) return sendError(socket, 'Finish your current game before joining another match.');
     const rated = payload.rated !== false;
     const queueKey = control + ':' + (rated ? 'rated' : 'casual');
     removeFromQueue(socket.id);
@@ -249,6 +256,7 @@ io.on('connection', (socket: PlayerSocket) => {
   });
 
   socket.on('private:create', (payload: { timeControl?: unknown } = {}) => {
+    if (hasActiveGame(socket.data.uid as string)) return sendError(socket, 'Finish your current game before creating an invitation.');
     if (!allowRate(socket, 'private:create', 5, 60_000)) return sendError(socket, 'Too many private invitations. Please wait before creating another.');
     const control = validTimeControl(payload.timeControl) ? payload.timeControl : '10+0';
     const code = randomBytes(4).toString('hex').toUpperCase();
@@ -257,6 +265,8 @@ io.on('connection', (socket: PlayerSocket) => {
   });
 
   socket.on('private:join', (payload: { code?: unknown }) => {
+    if (!allowRate(socket, 'private:join', 10, 60_000)) return sendError(socket, 'Too many invitation attempts. Please wait a moment.');
+    if (hasActiveGame(socket.data.uid as string)) return sendError(socket, 'Finish your current game before joining another.');
     const code = typeof payload.code === 'string' ? payload.code.trim().toUpperCase() : '';
     const invite = privateInvites.get(code);
     const host = invite ? io.sockets.sockets.get(invite.socketId) : undefined;
@@ -265,6 +275,7 @@ io.on('connection', (socket: PlayerSocket) => {
       return sendError(socket, 'That private game code is invalid or expired.');
     }
     if (host.data.uid === socket.data.uid) return sendError(socket, 'You cannot join your own invitation.');
+    if (hasActiveGame(host.data.uid as string)) { privateInvites.delete(code); return sendError(socket, 'The invitation host is already playing another game.'); }
     privateInvites.delete(code);
     emitGameStart(host, socket, invite.timeControl, false, code);
   });
