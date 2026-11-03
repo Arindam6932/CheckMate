@@ -51,6 +51,7 @@ service cloud.firestore {
         && request.resource.data.fromUid == request.auth.uid
         && request.resource.data.toUid is string
         && request.resource.data.toUid != request.auth.uid
+        && exists(/databases/$(database)/documents/publicProfiles/$(request.resource.data.toUid))
         && request.resource.data.status == 'pending'
         && request.resource.data.keys().hasOnly([
           'fromUid', 'toUid', 'status', 'createdAt', 'updatedAt'
@@ -69,6 +70,7 @@ service cloud.firestore {
         && request.resource.data.members is list
         && request.resource.data.members.size() == 2
         && isMember(request.resource.data.members)
+        && request.resource.data.requestId == friendId
         && request.resource.data.keys().hasOnly(['members', 'requestId', 'createdAt'])
         && getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.status == 'accepted'
         && getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.fromUid in request.resource.data.members
@@ -84,6 +86,7 @@ service cloud.firestore {
         && request.resource.data.members is list
         && request.resource.data.members.size() == 2
         && exists(/databases/$(database)/documents/friends/$(conversationId))
+        && get(/databases/$(database)/documents/friends/$(conversationId)).data.members == request.resource.data.members
         && request.resource.data.keys().hasOnly([
           'members', 'createdAt', 'updatedAt', 'lastMessage', 'lastMessageAt'
         ]);
