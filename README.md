@@ -14,6 +14,7 @@
 - Persistent light/dark/system appearance, board and piece preferences, sound preference, and reduced-motion control at `/settings`.
 - Interactive mate-in-one tactics trainer with hints and a locally saved solved count at `/puzzles`.
 - Opening explorer with ten replayable opening lines and fundamentals lessons at `/learn`.
+- Community tournament creation and player registration at `/tournaments` (pairings and automated rounds are not yet implemented).
 - Responsive navigation and mobile layout.
 
 ### Account foundation
