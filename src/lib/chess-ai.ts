@@ -33,7 +33,6 @@ function negamax(game: Chess, depth: number, alpha: number, beta: number): numbe
     next.move({ from: move.from, to: move.to, ...(move.promotion ? { promotion: move.promotion as 'q' | 'r' | 'b' | 'n' } : {}) });
     const score = -negamax(next, depth - 1, -beta, -alpha);
     best = Math.max(best, score);
-    alpha = Math.max(alpha, score);
     if (alpha >= beta) break;
   }
   return best;
@@ -44,11 +43,10 @@ export function findBestMove(game: Chess, depth = 2, skillLevel = 10): EngineMov
   if (game.isGameOver()) return null;
   const skill = Math.max(1, Math.min(10, Math.round(skillLevel)));
   const scored: Array<{ move: EngineMove; score: number }> = [];
-  let alpha = -Infinity;
   for (const move of game.moves({ verbose: true })) {
     const next = new Chess(game.fen());
     next.move({ from: move.from, to: move.to, ...(move.promotion ? { promotion: move.promotion as 'q' | 'r' | 'b' | 'n' } : {}) });
-    const score = -negamax(next, Math.max(0, depth - 1), -Infinity, -alpha);
+    const score = -negamax(next, Math.max(0, depth - 1), -Infinity, Infinity);
     scored.push({
       move: { from: move.from, to: move.to, ...(move.promotion ? { promotion: move.promotion as 'q' | 'r' | 'b' | 'n' } : {}) },
       score,
