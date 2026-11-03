@@ -37,3 +37,13 @@ Every socket connection must present a Firebase ID token with a verified email c
 - The 60-second disconnect grace period pauses the clocks. If no player reconnects before it expires, the disconnected side forfeits; if both disconnect, the game is recorded as a draw in the live event.
 - Game records are not yet persisted to Firestore.
 - Production deployment should add Redis-backed Socket.IO adapters/queues, durable game storage, observability, abuse throttling, and load testing before public launch.
+
+
+## Private player voice/video
+
+- The browser asks for microphone/camera permission only after a player explicitly starts a voice or video call.
+- The server accepts call membership and signaling only from the two UIDs assigned to the active game. Spectators have no join or signaling event.
+- Calls use WebRTC peer-to-peer media. No recording or media storage is implemented.
+- STUN is used by default. For reliable production connectivity, configure a TURN service.
+- Set `TURN_URL` and `TURN_SHARED_SECRET` only in the server environment. The server issues short-lived HMAC-SHA1 TURN credentials after verifying the player's Firebase ID token; do not expose the shared secret in any `VITE_*` variable.
+- Browser microphone/camera access requires HTTPS in production (localhost is allowed for development). Production TURN infrastructure and network testing are required before launch.
