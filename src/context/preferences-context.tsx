@@ -17,6 +17,8 @@ type PreferencesValue = {
   showLegalMoves: boolean;
   highlightLastMove: boolean;
   compactMode: boolean;
+  boardOrientation: 'white' | 'black';
+  showMoveList: boolean;
   backgroundStyle: BackgroundStyle;
   accentColor: string;
   customBoardColors: boolean;
@@ -35,6 +37,8 @@ type PreferencesValue = {
   setShowLegalMoves: (value: boolean) => void;
   setHighlightLastMove: (value: boolean) => void;
   setCompactMode: (value: boolean) => void;
+  setBoardOrientation: (value: 'white' | 'black') => void;
+  setShowMoveList: (value: boolean) => void;
   setBackgroundStyle: (value: BackgroundStyle) => void;
   setAccentColor: (value: string) => void;
   setCustomBoardColors: (value: boolean) => void;
@@ -50,7 +54,8 @@ const defaults = {
   appearance: 'dark' as Appearance, boardTheme: 'classic', pieceSet: 'classic',
   soundEnabled: true, soundVolume: 65, animationsEnabled: true, animationSpeed: 100,
   showCoordinates: true, showLegalMoves: true, highlightLastMove: true,
-  compactMode: false, backgroundStyle: 'aurora' as BackgroundStyle, accentColor: '#75d6a1',
+  compactMode: false, boardOrientation: 'white' as const, showMoveList: true,
+  backgroundStyle: 'aurora' as BackgroundStyle, accentColor: '#75d6a1',
   customBoardColors: false, boardLightColor: '#e9e8d9', boardDarkColor: '#56866c',
   pieceScale: 100, boardCorners: 9,
 };
@@ -79,6 +84,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [showLegalMoves, setShowLegalMoves] = useState(() => readBool('legalMoves', defaults.showLegalMoves));
   const [highlightLastMove, setHighlightLastMove] = useState(() => readBool('lastMove', defaults.highlightLastMove));
   const [compactMode, setCompactMode] = useState(() => readBool('compactMode', defaults.compactMode));
+  const [boardOrientation, setBoardOrientation] = useState<'white' | 'black'>(() => readPreference('boardOrientation', defaults.boardOrientation) === 'black' ? 'black' : 'white');
+  const [showMoveList, setShowMoveList] = useState(() => readBool('showMoveList', defaults.showMoveList));
   const [backgroundStyle, setBackgroundStyle] = useState<BackgroundStyle>(() => {
     const value = readPreference('backgroundStyle', defaults.backgroundStyle);
     return ['aurora','midnight','forest','plain'].includes(value) ? value as BackgroundStyle : defaults.backgroundStyle;
@@ -96,13 +103,14 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       appearance, boardTheme, pieceSet, sound: String(soundEnabled), soundVolume: String(soundVolume),
       animations: String(animationsEnabled), animationSpeed: String(animationSpeed),
       coordinates: String(showCoordinates), legalMoves: String(showLegalMoves), lastMove: String(highlightLastMove),
-      compactMode: String(compactMode), backgroundStyle, accentColor, customBoardColors: String(customBoardColors),
+      compactMode: String(compactMode), boardOrientation, showMoveList: String(showMoveList),
+      backgroundStyle, accentColor, customBoardColors: String(customBoardColors),
       boardLightColor, boardDarkColor, pieceScale: String(pieceScale), boardCorners: String(boardCorners),
     };
     try { Object.entries(values).forEach(([key, value]) => window.localStorage.setItem('checkmate.' + key, value)); }
     catch { /* Preferences remain available for this session if storage is unavailable. */ }
   }, [appearance, boardTheme, pieceSet, soundEnabled, soundVolume, animationsEnabled, animationSpeed,
-    showCoordinates, showLegalMoves, highlightLastMove, compactMode, backgroundStyle, accentColor,
+    showCoordinates, showLegalMoves, highlightLastMove, compactMode, boardOrientation, showMoveList, backgroundStyle, accentColor,
     customBoardColors, boardLightColor, boardDarkColor, pieceScale, boardCorners]);
 
   useEffect(() => {
