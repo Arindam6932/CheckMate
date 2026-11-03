@@ -10,7 +10,7 @@
 - Interactive local chessboard powered by `chess.js`.
 - Legal move highlighting, pawn promotion, move history, undo, restart, and board flip.
 - Five local time controls with clocks and increment support.
-- Local computer opponent with three lightweight alpha-beta search levels (not Stockfish).
+- Local computer opponent with ten selectable skill levels, material/positional evaluation, and skill-weighted move selection (not Stockfish).
 - Ten board palettes and ten independently selectable piece styles, including marble.
 - Interactive mate-in-one tactics trainer at `/puzzles`.
 - Ten replayable opening lines and fundamentals lessons at `/learn`.
