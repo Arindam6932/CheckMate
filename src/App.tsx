@@ -102,6 +102,7 @@ export default function App() {
       return;
     }
     if (piece && piece.color === game.turn()) {
+      if (!clockStarted) setClockStarted(true);
       setSelected(square);
       setLegal(game.moves({ square, verbose: true }).map(move => move.to));
     } else {
