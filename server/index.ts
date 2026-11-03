@@ -196,6 +196,7 @@ io.on('connection', (socket: PlayerSocket) => {
         whiteTimeMs: room.whiteTimeMs,
         blackTimeMs: room.blackTimeMs,
         serverTime: Date.now(),
+        paused: room.paused,
       });
     } catch {
       sendError(socket, 'That move is not legal.');
@@ -221,7 +222,7 @@ io.on('connection', (socket: PlayerSocket) => {
       turn: room.chess.turn(), check: room.chess.isCheck(),
       checkmate: room.chess.isCheckmate(), draw: room.chess.isDraw(),
       gameOver: room.chess.isGameOver(), whiteTimeMs: room.whiteTimeMs,
-      blackTimeMs: room.blackTimeMs, serverTime: Date.now(),
+      blackTimeMs: room.blackTimeMs, serverTime: Date.now(), paused: room.paused,
     });
   });
 
