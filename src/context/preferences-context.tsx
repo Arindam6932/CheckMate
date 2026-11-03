@@ -234,11 +234,11 @@ export function usePreferences() {
 }
 
 export function ThemeFrame({ children }: { children: ReactNode }) {
-  const { isDark, animationsEnabled, showCoordinates, showLegalMoves, highlightLastMove, compactMode, highContrast, backgroundStyle, customBoardColors } = usePreferences();
+  const { isDark, animationsEnabled, showCoordinates, showLegalMoves, highlightLastMove, compactMode, highContrast, backgroundStyle, customBoardColors, boardTheme, pieceSet } = usePreferences();
   const classes = ['theme-root-frame', isDark ? 'dark' : 'light', animationsEnabled ? '' : 'motion-off',
     showCoordinates ? '' : 'hide-coordinates', showLegalMoves ? '' : 'hide-legal-hints',
     highlightLastMove ? '' : 'hide-last-move', compactMode ? 'compact-mode' : '',
     highContrast ? 'high-contrast' : '',
-    customBoardColors ? 'custom-board-colors' : '', 'board-theme-' + prefs.boardTheme, 'piece-set-' + prefs.pieceSet, 'background-' + backgroundStyle].filter(Boolean).join(' ');
+    customBoardColors ? 'custom-board-colors' : '', 'board-theme-' + boardTheme, 'piece-set-' + pieceSet, 'background-' + backgroundStyle].filter(Boolean).join(' ');
   return <div className={classes}>{children}</div>;
 }
