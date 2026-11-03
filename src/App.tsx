@@ -35,7 +35,7 @@ const formatClock = (seconds: number) => `${Math.floor(seconds / 60).toString().
 export default function App() {
   const navigate = useNavigate();
   const { user, logOut } = useAuth();
-  const { isDark, setAppearance, boardTheme, setBoardTheme, pieceSet, setPieceSet, boardOrientation, setBoardOrientation, showMoveList, setShowMoveList, highlightLastMove } = usePreferences();
+  const { isDark, setAppearance, boardTheme, setBoardTheme, pieceSet, setPieceSet, boardOrientation, setBoardOrientation, showMoveList, setShowMoveList, highlightLastMove, autoQueen } = usePreferences();
   const [game, setGame] = useState(initialGame);
   const [selected, setSelected] = useState<Square | null>(null);
   const [legal, setLegal] = useState<Square[]>([]);
@@ -124,8 +124,22 @@ export default function App() {
     if (flagged || game.isGameOver() || (gameMode === 'computer' && game.turn() !== 'w')) return;
     if (selected && legal.includes(square)) {
       const candidate = game.moves({ verbose: true }).find(move => move.from === selected && move.to === square && move.promotion);
-      if (candidate) {
+      if (candidate && !autoQueen) {
         setPromotionRequest({ from: selected, to: square, color: game.turn() });
+        setSelected(null); setLegal([]);
+        return;
+      }
+      if (candidate && autoQueen) {
+        const next = cloneGame(game);
+        try {
+          const movingSide = game.turn();
+          next.move({ from: selected, to: square, promotion: 'q' });
+          const increment = Number(timeControl.split('+')[1] || 0);
+          if (movingSide === 'w') setWhiteTime(value => value + increment);
+          else setBlackTime(value => value + increment);
+          setClockStarted(true); setGame(next);
+          setNotice(next.isCheckmate() ? 'Checkmate. Game over.' : 'Pawn automatically promoted to a queen.');
+        } catch { setNotice('Promotion could not be completed.'); }
         setSelected(null); setLegal([]);
         return;
       }
