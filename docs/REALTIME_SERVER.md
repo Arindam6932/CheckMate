@@ -18,7 +18,8 @@ The Vite app runs at `http://localhost:5173`; the realtime server runs at `http:
 
 ## Events
 
-- `queue:join` / `queue:leave`: queue for a supported time control.
+- `queue:join` / `queue:leave`: queue for a supported time control, separately for rated or casual play.
+- Private invite games are always casual; only rated public matchmaking changes Elo.
 - `match:found`: private room assignment and player color.
 - `private:create` / `private:join`: create and join a code-protected two-player game.
 - `game:move`: submit a move; server validates turn, coordinates, and chess legality.
@@ -32,7 +33,7 @@ The Vite app runs at `http://localhost:5173`; the realtime server runs at `http:
 - `DELETE /tournaments/:id/register`: withdraw before the event starts.
 - `POST /tournaments/:id/close`: organizer-only registration closure.
 
-Every socket connection must present a Firebase ID token with a verified email claim. The server verifies it with the Firebase Admin SDK. Only the two assigned player UIDs may act in a game room; spectator joining is not implemented. The server owns move validation and clock accounting, including increments and timeout outcomes. Completed games and provisional Elo updates are written atomically to Firestore; participants can read only their own game records.
+Every socket connection must present a Firebase ID token with a verified email claim. The server verifies it with the Firebase Admin SDK. Only the two assigned player UIDs may act in a game room; spectator joining is not implemented. The server owns move validation and clock accounting, including increments and timeout outcomes. Completed games and player statistics are written atomically to Firestore. Only rated public matches update Elo; casual and private matches are recorded without changing ratings. Participants can read only their own game records.
 
 Tournament registration uses Firebase Admin transactions on the realtime server. The participant subcollection is read-only to browser clients, preventing direct writes that could bypass capacity enforcement. The API verifies Firebase ID tokens and requires a verified email address.
 
