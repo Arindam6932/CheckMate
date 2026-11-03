@@ -103,22 +103,92 @@ function sendError(socket: PlayerSocket, message: string) {
 }
 
 async function persistGame(room: GameRoom, result: string, reason: string) {
+  const [minutes] = room.timeControl.split('+').map(Number);
+  const category = minutes >= 30 ? 'classical' : minutes >= 10 ? 'rapid' : 'blitz';
+  const scoreWhite = result === 'white-wins' ? 1 : result === 'black-wins' ? 0 : 0.5;
+  const scoreBlack = 1 - scoreWhite;
+  const gameRef = firestore.collection('games').doc(room.id);
+  const whiteRef = firestore.collection('players').doc(room.whiteUid);
+  const blackRef = firestore.collection('players').doc(room.blackUid);
+  const whitePublicRef = firestore.collection('publicProfiles').doc(room.whiteUid);
+  const blackPublicRef = firestore.collection('publicProfiles').doc(room.blackUid);
+
   try {
-    await firestore.collection('games').doc(room.id).set({
-      gameId: room.id,
-      whiteUid: room.whiteUid,
-      blackUid: room.blackUid,
-      timeControl: room.timeControl,
-      result,
-      reason,
-      pgn: room.chess.pgn(),
-      finalFen: room.chess.fen(),
-      moveCount: room.chess.history().length,
-      startedAt: Timestamp.fromMillis(room.createdAt),
-      finishedAt: FieldValue.serverTimestamp(),
+    await firestore.runTransaction(async transaction => {
+      const [existing, whiteSnapshot, blackSnapshot] = await Promise.all([
+        transaction.get(gameRef),
+        transaction.get(whiteRef),
+        transaction.get(blackRef),
+      ]);
+      if (existing.exists) return;
+
+      const whiteData = whiteSnapshot.data() || {};
+      const blackData = blackSnapshot.data() || {};
+      const whiteRatings = (whiteData.ratings || {}) as Record<string, number>;
+      const blackRatings = (blackData.ratings || {}) as Record<string, number>;
+      const whiteStats = (whiteData.stats || {}) as Record<string, number>;
+      const blackStats = (blackData.stats || {}) as Record<string, number>;
+      const whiteBefore = Number(whiteRatings[category] ?? 1500);
+      const blackBefore = Number(blackRatings[category] ?? 1500);
+      const expectedWhite = 1 / (1 + Math.pow(10, (blackBefore - whiteBefore) / 400));
+      const expectedBlack = 1 - expectedWhite;
+      const whiteDelta = Math.round(32 * (scoreWhite - expectedWhite));
+      const blackDelta = Math.round(32 * (scoreBlack - expectedBlack));
+      const whiteAfter = whiteBefore + whiteDelta;
+      const blackAfter = blackBefore + blackDelta;
+
+      const nextStats = (stats: Record<string, number>, score: number) => ({
+        gamesPlayed: Number(stats.gamesPlayed || 0) + 1,
+        wins: Number(stats.wins || 0) + (score === 1 ? 1 : 0),
+        draws: Number(stats.draws || 0) + (score === 0.5 ? 1 : 0),
+        losses: Number(stats.losses || 0) + (score === 0 ? 1 : 0),
+      });
+
+      const whiteNextStats = nextStats(whiteStats, scoreWhite);
+      const blackNextStats = nextStats(blackStats, scoreBlack);
+      const finishedAt = FieldValue.serverTimestamp();
+
+      transaction.set(gameRef, {
+        gameId: room.id,
+        whiteUid: room.whiteUid,
+        blackUid: room.blackUid,
+        timeControl: room.timeControl,
+        ratingCategory: category,
+        result,
+        reason,
+        pgn: room.chess.pgn(),
+        finalFen: room.chess.fen(),
+        moveCount: room.chess.history().length,
+        whiteRatingBefore: whiteBefore,
+        whiteRatingAfter: whiteAfter,
+        blackRatingBefore: blackBefore,
+        blackRatingAfter: blackAfter,
+        startedAt: Timestamp.fromMillis(room.createdAt),
+        finishedAt,
+      });
+      transaction.set(whiteRef, {
+        ratings: { [category]: whiteAfter },
+        stats: whiteNextStats,
+        updatedAt: finishedAt,
+      }, { merge: true });
+      transaction.set(blackRef, {
+        ratings: { [category]: blackAfter },
+        stats: blackNextStats,
+        updatedAt: finishedAt,
+      }, { merge: true });
+      transaction.set(whitePublicRef, {
+        ratings: { [category]: whiteAfter },
+        stats: whiteNextStats,
+        updatedAt: finishedAt,
+      }, { merge: true });
+      transaction.set(blackPublicRef, {
+        ratings: { [category]: blackAfter },
+        stats: blackNextStats,
+        updatedAt: finishedAt,
+      }, { merge: true });
     });
   } catch (error) {
-    console.error('Could not persist completed game:', error);
+    console.error('Could not persist completed game and ratings:', error);
   }
 }
 
