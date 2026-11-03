@@ -79,3 +79,10 @@ GitHub Actions runs the TypeScript/Vite and realtime-server type checks on pushe
 - In-game calls are limited to the two active players; spectators cannot join private calls.
 - Audio/video are off by default, permissions are explicit, and recording is off by default.
 - The core experience launches free; premium functionality can be added later.
+
+
+## Personalisation
+
+- Expanded personalisation studio at `/settings`: five complete style presets, dark/light/system appearance, eight accent colours plus custom colour picker, four background atmospheres, ten board palettes, ten piece sets, custom light/dark square colours, board roundness, piece scale, coordinates, legal-move hints, last-move highlighting, compact mode, sound controls, animation toggle and speed.
+
+Preferences are saved locally in the current browser. Custom board colours, coordinates, legal-move hints, last-move highlighting, board corner radius, piece scale, animation speed, interface density, accent colour, and background style are applied across the supported pages and boards. Sound controls are retained for supported sound effects as those are added.
