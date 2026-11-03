@@ -25,6 +25,14 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /games/{gameId} {
+      allow read: if signedIn()
+        && (resource.data.whiteUid == request.auth.uid
+          || resource.data.blackUid == request.auth.uid);
+      // Only the trusted realtime server (Firebase Admin SDK) writes game records.
+      allow create, update, delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
