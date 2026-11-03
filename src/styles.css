@@ -194,3 +194,24 @@
 .theme-root-frame .app-shell{--accent:var(--user-accent);--accent-strong:var(--user-accent)}
 .theme-root-frame .theme-toggle:focus-visible,
 .theme-root-frame button:focus-visible{outline-color:var(--user-accent)}
+
+
+/* Extend the selected atmosphere to account and multiplayer screens */
+.theme-root-frame.background-midnight .online-screen,
+.theme-root-frame.background-midnight .auth-screen,
+.theme-root-frame.background-midnight .profile-screen{background:radial-gradient(ellipse at 65% -20%,#34364066,transparent 42%),#090b0e}
+.theme-root-frame.background-forest .online-screen,
+.theme-root-frame.background-forest .auth-screen,
+.theme-root-frame.background-forest .profile-screen{background:radial-gradient(ellipse at 25% 0,#285b3b66,transparent 46%),#07130d}
+.theme-root-frame.background-plain .online-screen,
+.theme-root-frame.background-plain .auth-screen,
+.theme-root-frame.background-plain .profile-screen{background:#101613}
+.theme-root-frame.light.background-plain .online-screen,
+.theme-root-frame.light.background-plain .auth-screen,
+.theme-root-frame.light.background-plain .profile-screen{background:#f4f7f2}
+.theme-root-frame .brand-mark,
+.theme-root-frame .footer-brand .brand-mark{color:var(--user-accent)}
+.theme-root-frame .play-card.featured{border-color:color-mix(in srgb,var(--user-accent) 48%,transparent)}
+.theme-root-frame .play-card.featured .play-arrow,
+.theme-root-frame .text-link,
+.theme-root-frame .learn-footer a{color:var(--user-accent)}
