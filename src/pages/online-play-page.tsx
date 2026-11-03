@@ -5,6 +5,7 @@ import type { Socket } from 'socket.io-client';
 import { ArrowLeft, Copy, LogOut, Radio, Swords, Users } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
 import { connectMultiplayer } from '../lib/multiplayer';
+import PrivateCall from '../components/private-call';
 
 type MatchInfo = { gameId: string; color: 'w' | 'b'; opponentUid: string; timeControl: string; whiteTimeMs: number; blackTimeMs: number };
 const formatOnlineClock = (milliseconds: number) => {
@@ -135,6 +136,7 @@ export default function OnlinePlayPage() {
           }))}
         </div><div className="online-coords">{ranks.map(rank=><span key={rank}>{rank}</span>)}</div></div> : <div className="online-empty-board"><span>♞</span><b>Your next opponent is out there.</b><p>Find a rated or casual match, or invite a friend with a private code.</p></div>}
         <div className="online-game-status"><Radio size={15}/>{status}</div>
+        {match && socketRef.current && <PrivateCall socket={socketRef.current} gameId={match.gameId}/>}
         {match && <div className="online-game-actions">{drawOffered ? <><button onClick={()=>{socketRef.current?.emit('game:accept-draw',{gameId:match.gameId});setDrawOffered(false);}}>Accept draw</button><button onClick={()=>{socketRef.current?.emit('game:decline-draw',{gameId:match.gameId});setDrawOffered(false);}}>Decline</button></> : <button onClick={()=>socketRef.current?.emit('game:offer-draw',{gameId:match.gameId})}>Offer draw</button>}<button className="resign" onClick={()=>socketRef.current?.emit('game:resign',{gameId:match.gameId})}>Resign</button></div>}
       </section>
       <aside className="online-side-panel">
