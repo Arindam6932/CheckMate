@@ -114,3 +114,72 @@
 .light .topbar{background:#f8fbf7e8;border-color:#dce7dc;box-shadow:0 14px 40px #263b2812}
 @media(max-width:980px){.topbar{width:calc(100% - 28px);padding:0 16px}}
 @media(max-width:760px){.topbar{width:calc(100% - 22px);height:62px;margin-top:10px;padding:0 13px;border-radius:17px}.page-wrap{padding-top:25px}}
+
+
+/* Global preferences: applied to every board and supported page */
+.theme-root-frame{min-height:100vh;--user-accent:#75d6a1;--animation-speed:1s}
+.theme-root-frame .chessboard{border-radius:var(--board-radius,9px)}
+.theme-root-frame .chessboard .piece{transform:scale(var(--piece-scale,1));transition:transform calc(.18s * var(--animation-speed,1)) ease}
+.theme-root-frame .chessboard .square{transition:background-color calc(.16s * var(--animation-speed,1)) ease}
+.theme-root-frame.custom-board-colors .chessboard .light-square{background:var(--board-light)!important}
+.theme-root-frame.custom-board-colors .chessboard .dark-square{background:var(--board-dark)!important}
+.theme-root-frame.custom-board-colors .studio-live-board .light-square{background:var(--board-light)!important}
+.theme-root-frame.custom-board-colors .studio-live-board .dark-square{background:var(--board-dark)!important}
+.theme-root-frame.hide-coordinates .board-coordinates,
+.theme-root-frame.hide-coordinates .puzzle-coordinates,
+.theme-root-frame.hide-coordinates .opening-coords,
+.theme-root-frame.hide-coordinates .rank-label,
+.theme-root-frame.hide-coordinates .file-label{display:none!important}
+.theme-root-frame.hide-legal-hints .legal-dot,
+.theme-root-frame.hide-legal-hints .legal-capture{display:none!important}
+.theme-root-frame.hide-last-move .square.last-move{background:inherit!important}
+.theme-root-frame.compact-mode .page-wrap{padding-top:22px;padding-bottom:14px}
+.theme-root-frame.compact-mode .play-sidebar{padding:15px}
+.theme-root-frame.compact-mode .lower-grid{gap:10px}
+.theme-root-frame .eyebrow,
+.theme-root-frame .online-eyebrow,
+.theme-root-frame .settings-title-icon,
+.theme-root-frame .studio-heading>div,
+.theme-root-frame .studio-toggle-icon{color:var(--user-accent)}
+.theme-root-frame .nav-link.active{box-shadow:inset 0 -2px var(--user-accent)}
+.theme-root-frame .nav-link:hover{color:var(--user-accent)}
+.theme-root-frame .studio-choice.active,
+.theme-root-frame .background-choice.active,
+.theme-root-frame .board-theme-choice.active,
+.theme-root-frame .piece-set-choice.active{border-color:var(--user-accent)}
+.theme-root-frame .accent-swatch.selected{outline-color:var(--user-accent)}
+.theme-root-frame .studio-slider input{accent-color:var(--user-accent)}
+.theme-root-frame.background-midnight .app-shell,
+.theme-root-frame.background-midnight .settings-screen,
+.theme-root-frame.background-midnight .puzzles-screen,
+.theme-root-frame.background-midnight .learn-screen,
+.theme-root-frame.background-midnight .tournaments-screen,
+.theme-root-frame.background-midnight .community-screen,
+.theme-root-frame.background-midnight .leaderboard-screen{background:radial-gradient(ellipse at 65% -20%,#34364066,transparent 42%),#090b0e}
+.theme-root-frame.background-forest .app-shell,
+.theme-root-frame.background-forest .settings-screen,
+.theme-root-frame.background-forest .puzzles-screen,
+.theme-root-frame.background-forest .learn-screen,
+.theme-root-frame.background-forest .tournaments-screen,
+.theme-root-frame.background-forest .community-screen,
+.theme-root-frame.background-forest .leaderboard-screen{background:radial-gradient(ellipse at 25% 0,#285b3b66,transparent 46%),#07130d}
+.theme-root-frame.background-plain .app-shell,
+.theme-root-frame.background-plain .settings-screen,
+.theme-root-frame.background-plain .puzzles-screen,
+.theme-root-frame.background-plain .learn-screen,
+.theme-root-frame.background-plain .tournaments-screen,
+.theme-root-frame.background-plain .community-screen,
+.theme-root-frame.background-plain .leaderboard-screen{background:#101613}
+.theme-root-frame.light.background-plain .app-shell,
+.theme-root-frame.light.background-plain .settings-screen,
+.theme-root-frame.light.background-plain .puzzles-screen,
+.theme-root-frame.light.background-plain .learn-screen,
+.theme-root-frame.light.background-plain .tournaments-screen,
+.theme-root-frame.light.background-plain .community-screen,
+.theme-root-frame.light.background-plain .leaderboard-screen{background:#f4f7f2}
+.theme-root-frame.motion-off *,
+.theme-root-frame.motion-off *::before,
+.theme-root-frame.motion-off *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+.theme-root-frame .settings-board-preview{border-radius:var(--board-radius,9px)}
+.theme-root-frame .studio-live-board{border-radius:var(--board-radius,9px)}
+@media(max-width:520px){.theme-root-frame.compact-mode .page-wrap{padding:18px 12px 12px}}
