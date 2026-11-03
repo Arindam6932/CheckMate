@@ -8,7 +8,7 @@ import { connectMultiplayer } from '../lib/multiplayer';
 import PrivateCall from '../components/private-call';
 import { usePreferences } from '../context/preferences-context';
 
-type MatchInfo = { gameId: string; color: 'w' | 'b'; opponentUid: string; timeControl: string; whiteTimeMs: number; blackTimeMs: number };
+type MatchInfo = { gameId: string; color: 'w' | 'b'; opponentUid: string; timeControl: string; rated: boolean; whiteTimeMs: number; blackTimeMs: number };
 const formatOnlineClock = (milliseconds: number) => {
   const seconds = Math.ceil(milliseconds / 1000);
   return `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
@@ -23,6 +23,7 @@ export default function OnlinePlayPage() {
   const [connected, setConnected] = useState(false);
   const [status, setStatus] = useState('Connect to find an opponent.');
   const [timeControl, setTimeControl] = useState('10+0');
+  const [rated, setRated] = useState(true);
   const [match, setMatch] = useState<MatchInfo | null>(null);
   const [game, setGame] = useState(() => new Chess());
   const [selected, setSelected] = useState<Square | null>(null);
@@ -87,7 +88,7 @@ export default function OnlinePlayPage() {
   function joinQueue() {
     if (!socketRef.current || !connected) { setStatus('Waiting for a secure server connection.'); return; }
     setMatch(null); setGame(new Chess()); setBusy(true);
-    socketRef.current.emit('queue:join', { timeControl });
+    socketRef.current.emit('queue:join', { timeControl, rated });
   }
   function cancelQueue() {
     socketRef.current?.emit('queue:leave'); setBusy(false);
@@ -128,7 +129,7 @@ export default function OnlinePlayPage() {
     <header className="online-header"><Link to="/" className="online-back"><ArrowLeft size={16}/> CHECKMATE</Link><span className="online-status"><i className={connected ? 'connected' : ''}/>{connected ? 'SERVER CONNECTED' : 'CONNECTING'}</span></header>
     <div className="online-layout">
       <section className="online-board-panel">
-        <div className="online-player-row"><div className="online-player-avatar">♟</div><div><b>{match ? 'Opponent' : 'Online arena'}</b><small>{match ? 'CHECKMATE player' : 'Real-time matchmaking'}</small></div>{match && <div className="online-clock-pair"><span className={game.turn()==='w'?'online-clock-active':''}>♙ {formatOnlineClock(clocks.white)}</span><span className={game.turn()==='b'?'online-clock-active':''}>♟ {formatOnlineClock(clocks.black)}</span></div>}<span className="online-control">{match?.timeControl || timeControl}</span></div>
+        <div className="online-player-row"><div className="online-player-avatar">♟</div><div><b>{match ? 'Opponent' : 'Online arena'}</b><small>{match ? (match.rated ? 'Rated match' : 'Casual match') : 'Real-time matchmaking'}</small></div>{match && <div className="online-clock-pair"><span className={game.turn()==='w'?'online-clock-active':''}>♙ {formatOnlineClock(clocks.white)}</span><span className={game.turn()==='b'?'online-clock-active':''}>♟ {formatOnlineClock(clocks.black)}</span></div>}<span className="online-control">{match?.timeControl || timeControl}</span></div>
         {match ? <div className="online-board-wrap"><div className="online-coords">{ranks.map(rank=><span key={rank}>{rank}</span>)}</div><div className="online-board">
           {displayRows.map((row,r)=>row.map((piece,col)=>{
             const square=(files[col]+ranks[r]) as Square;
@@ -142,7 +143,7 @@ export default function OnlinePlayPage() {
               {r===7 && <em>{files[col]}</em>}
             </button>;
           }))}
-        </div><div className="online-coords">{ranks.map(rank=><span key={rank}>{rank}</span>)}</div></div> : <div className="online-empty-board"><span>♞</span><b>Your next opponent is out there.</b><p>Find a rated or casual match, or invite a friend with a private code.</p></div>}
+        </div><div className="online-coords">{ranks.map(rank=><span key={rank}>{rank}</span>)}</div></div> : <div className="online-empty-board"><span>♞</span><b>Your next opponent is out there.</b><p>Choose rated or casual matchmaking, or invite a friend. Private games are always casual.</p></div>}
         <div className="online-game-status"><Radio size={15}/>{status}</div>
         {pendingPromotion && <div className="online-game-actions" role="group" aria-label="Choose promotion piece"><span>Promote pawn to:</span>{(['q','r','b','n'] as const).map(piece=><button key={piece} onClick={()=>{if(match){socketRef.current?.emit('game:move',{gameId:match.gameId,from:pendingPromotion.from,to:pendingPromotion.to,promotion:piece});setPendingPromotion(null);}}}>{({q:'♛ Queen',r:'♜ Rook',b:'♝ Bishop',n:'♞ Knight'})[piece]}</button>)}</div>}
         {match && socketRef.current && <PrivateCall socket={socketRef.current} gameId={match.gameId}/>}
@@ -151,6 +152,7 @@ export default function OnlinePlayPage() {
       <aside className="online-side-panel">
         <div className="online-eyebrow">PLAY SOMEONE REAL</div><h1>Find your match.</h1><p>Fair, fast, and focused on the game.</p>
         <label className="online-field-label">TIME CONTROL<select value={timeControl} onChange={e=>setTimeControl(e.target.value)} disabled={busy || Boolean(match)}><option value="3+0">3 min · Blitz</option><option value="5+0">5 min · Blitz</option><option value="10+0">10 min · Rapid</option><option value="15+10">15 + 10 · Rapid</option><option value="30+0">30 min · Classical</option></select></label>
+        {!match && <label className="online-field-label" style={{display:'flex',alignItems:'center',gap:10,textTransform:'none'}}><input type="checkbox" checked={rated} onChange={e=>setRated(e.target.checked)} disabled={busy}/> Rated match · update your rating</label>}
         {!match ? <><button className="online-primary" onClick={joinQueue} disabled={!connected || busy}><Swords size={17}/>{busy?'Searching…':'Find an opponent'}</button>{busy && <button className="online-secondary" onClick={cancelQueue}>Cancel search</button>}
           <div className="online-separator"><span/> OR PLAY A FRIEND <span/></div>
           <button className="online-secondary" onClick={createPrivate} disabled={!connected}><Users size={16}/> Create private game</button>
