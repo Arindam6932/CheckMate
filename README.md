@@ -11,6 +11,7 @@
 - Legal move highlighting, selectable pawn promotion, move history, undo, restart, and board flip.
 - Five selectable time controls with active player clocks and increment support.
 - Ten board palettes and ten independently selectable piece appearances, including marble.
+- Persistent light/dark/system appearance, board and piece preferences, sound preference, and reduced-motion control at `/settings`.
 - Responsive navigation and mobile layout.
 
 ### Account foundation
