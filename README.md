@@ -26,8 +26,9 @@
 ### Real-time multiplayer MVP
 - Socket.IO server with Firebase Admin ID-token verification.
 - Time-control matchmaking and private invitation codes.
-- Server-authoritative chess move validation, FEN/PGN snapshots, and clocks.
-- Draw offers, draw acceptance, resignation, and a 60-second disconnect grace period.
+- Server-authoritative chess move validation, FEN/PGN snapshots, clocks, increments, and timeout decisions.
+- Draw offers, draw acceptance, resignation, private invite codes, and a 60-second reconnect grace period.
+- Verified-email gate for online play.
 - Dedicated setup and protocol guide: [docs/REALTIME_SERVER.md](docs/REALTIME_SERVER.md).
 
 Authentication and realtime server code are wired but remain unavailable until a **separate CHECKMATE Firebase project** and server-side credentials are configured. No AgriSence credentials or databases are used. The multiplayer MVP currently stores active games and queues in server memory; it is not yet horizontally scalable or durable.
