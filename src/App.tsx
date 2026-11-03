@@ -35,7 +35,7 @@ const formatClock = (seconds: number) => `${Math.floor(seconds / 60).toString().
 export default function App() {
   const navigate = useNavigate();
   const { user, logOut } = useAuth();
-  const { isDark, setAppearance, boardTheme, setBoardTheme, pieceSet, setPieceSet, boardOrientation, setBoardOrientation, showMoveList } = usePreferences();
+  const { isDark, setAppearance, boardTheme, setBoardTheme, pieceSet, setPieceSet, boardOrientation, setBoardOrientation, showMoveList, highlightLastMove } = usePreferences();
   const [game, setGame] = useState(initialGame);
   const [selected, setSelected] = useState<Square | null>(null);
   const [legal, setLegal] = useState<Square[]>([]);
@@ -238,7 +238,7 @@ export default function App() {
                   const isLight = (r + c) % 2 === 0;
                   const isSelected = selected === square;
                   const isLegal = legal.includes(square);
-                  const isLast = lastMove && (lastMove.from === square || lastMove.to === square);
+                  const isLast = highlightLastMove && lastMove && (lastMove.from === square || lastMove.to === square);
                   return <button key={square} aria-label={square} onClick={() => chooseSquare(square)} className={['square', isLight ? 'light-square' : 'dark-square', isSelected ? 'selected' : '', isLast ? 'last-move' : ''].join(' ')}>
                     {piece && <span className={'piece ' + (piece.color === 'w' ? 'white-piece' : 'black-piece')}>{glyph[piece.color + piece.type]}</span>}
                     {isLegal && <span className={piece ? 'legal-capture' : 'legal-dot'}/>}
