@@ -56,3 +56,14 @@
 .piece-set-fantasy .white-piece{color:#e9d5ff;text-shadow:0 0 8px #b38bff,0 2px 2px #30204c}.piece-set-fantasy .black-piece{color:#33284b;text-shadow:0 0 5px #a78bfa,0 1px 1px #e8dcff}
 .light .board-customization{background:#fff;border-color:#dce7dc}.light .board-customization label{color:#5c7666}.light .board-customization select{background:#f2f6f1;border-color:#d3e1d5;color:#24372b}
 @media(max-width:420px){.board-customization{gap:8px;padding:10px}.board-customization select{font-size:9px}}
+
+
+.clock-pair{display:flex;align-items:center;gap:6px;margin-left:auto;margin-right:9px}
+.clock-pair span{padding:7px 9px;border:1px solid #2b4037;border-radius:7px;background:#14201b;color:#a5b7ac;font:600 10px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums}
+.clock-pair .clock-active{border-color:#75d6a1;background:#1c3829;color:#b4f0c8;box-shadow:0 0 0 2px #75d6a112}
+.time-control select{height:31px;max-width:95px;background:#17241f;border:1px solid #385044;border-radius:7px;color:#d9e9de;padding:0 7px;font:500 10px 'DM Sans',sans-serif}
+.time-control select:focus{outline:2px solid #75d6a155}
+.light .clock-pair span{background:#fff;border-color:#dce7dc;color:#5d7163}
+.light .clock-pair .clock-active{background:#e4f5e8;border-color:#258a57;color:#176a40}
+.light .time-control select{background:#fff;border-color:#d5e2d6;color:#34483a}
+@media(max-width:520px){.clock-pair{gap:4px;margin-right:4px}.clock-pair span{font-size:9px;padding:6px}.board-topline .opponent span{font-size:9px}}
