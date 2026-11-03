@@ -29,6 +29,7 @@
 - Server-authoritative chess move validation, FEN/PGN snapshots, clocks, increments, and timeout decisions.
 - Draw offers, draw acceptance, resignation, private invite codes, and a 60-second reconnect grace period.
 - Verified-email gate for online play.
+- Completed games are saved to Firestore; only the two participants can read each record.
 - Dedicated setup and protocol guide: [docs/REALTIME_SERVER.md](docs/REALTIME_SERVER.md).
 
 Authentication and realtime server code are wired but remain unavailable until a **separate CHECKMATE Firebase project** and server-side credentials are configured. No AgriSence credentials or databases are used. The multiplayer MVP currently stores active games and queues in server memory; it is not yet horizontally scalable or durable.
