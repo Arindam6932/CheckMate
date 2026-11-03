@@ -72,7 +72,8 @@ export default function GameHistoryPage() {
 
   function resultLabel(record: GameRecord) {
     if (record.result === 'draw') return 'DRAW';
-    const won = (record.result === 'white-wins' && record.whiteUid === user.uid) || (record.result === 'black-wins' && record.blackUid === user.uid);
+    const currentUid = user?.uid ?? '';
+    const won = (record.result === 'white-wins' && record.whiteUid === currentUid) || (record.result === 'black-wins' && record.blackUid === currentUid);
     return won ? 'WIN' : 'LOSS';
   }
 
