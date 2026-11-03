@@ -63,7 +63,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       setUid(user?.uid ?? null);
       setLoadedUid(null);
       setBackgroundPath('');
-      if (!user) { setPrefs(defaults); setSyncStatus('signed-out'); }
+      setPrefs(defaults);
+      if (!user) setSyncStatus('signed-out');
       else setSyncStatus('loading');
     });
   }, []);
@@ -131,9 +132,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     await uploadBytes(uploaded, file, { contentType: file.type, cacheControl: 'public,max-age=3600' });
     const url = await getDownloadURL(uploaded);
     const oldPath = backgroundPath;
+    const { customBackground, ...currentSettings } = prefs;
     await setDoc(settingsRef(user.uid), {
-      customBackgroundUrl: url, customBackgroundPath: path, backgroundStyle: 'custom',
-      updatedAt: serverTimestamp(),
+      ...currentSettings, customBackgroundUrl: url, customBackgroundPath: path,
+      backgroundStyle: 'custom', updatedAt: serverTimestamp(),
     }, { merge: true });
     setBackgroundPath(path);
     setPrefs(current => ({ ...current, customBackground: url, backgroundStyle: 'custom' }));
@@ -148,9 +150,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     const user = auth?.currentUser;
     if (!user || !storage || !db) throw new Error('Sign in to manage your background image.');
     const oldPath = backgroundPath;
+    const { customBackground, ...currentSettings } = prefs;
     await setDoc(settingsRef(user.uid), {
-      customBackgroundUrl: '', customBackgroundPath: '', backgroundStyle: 'aurora',
-      updatedAt: serverTimestamp(),
+      ...currentSettings, customBackgroundUrl: '', customBackgroundPath: '',
+      backgroundStyle: 'aurora', updatedAt: serverTimestamp(),
     }, { merge: true });
     setBackgroundPath('');
     setPrefs(current => ({ ...current, customBackground: '', backgroundStyle: 'aurora' }));
