@@ -31,6 +31,7 @@
 - Verified-email gate for online play.
 - Opt-in, two-player-only WebRTC voice/video calls; media is off until the player starts a call, and no recording is implemented.
 - Completed games are saved to Firestore; only the two participants can read each record.
+- Friend requests, friendships, conversations, and messages are protected by Firestore membership rules.
 - Dedicated setup and protocol guide: [docs/REALTIME_SERVER.md](docs/REALTIME_SERVER.md).
 
 Authentication and realtime server code are wired but remain unavailable until a **separate CHECKMATE Firebase project** and server-side credentials are configured. No AgriSence credentials or databases are used. The multiplayer MVP currently stores active games and queues in server memory; it is not yet horizontally scalable or durable.
