@@ -42,7 +42,7 @@ export function findBestMove(game: Chess, depth = 2): EngineMove | null {
   const beta = Infinity;
   for (const move of game.moves({ verbose: true })) {
     const next = new Chess(game.fen());
-    next.move({ from: move.from, to: move.to, ...(move.promotion ? { promotion: move.promotion } : {}) });
+    next.move({ from: move.from, to: move.to, ...(move.promotion ? { promotion: move.promotion as 'q' | 'r' | 'b' | 'n' } : {}) });
     const score = -negamax(next, Math.max(0, depth - 1), -beta, -alpha);
     if (score > bestScore) {
       bestScore = score;
