@@ -50,7 +50,7 @@ export default function App() {
   const [clockStarted, setClockStarted] = useState(false);
   const [flagged, setFlagged] = useState<'w' | 'b' | null>(null);
   const [gameMode, setGameMode] = useState<'local' | 'computer'>('local');
-  const [aiDepth, setAiDepth] = useState(2);
+  const [botLevel, setBotLevel] = useState(3);
   const [aiThinking, setAiThinking] = useState(false);
   const [promotionRequest, setPromotionRequest] = useState<{ from: Square; to: Square; color: 'w' | 'b' } | null>(null);
   const [playerStats, setPlayerStats] = useState({ rapid: 1500, games: 0, wins: 0 });
@@ -95,7 +95,7 @@ export default function App() {
     }
     setAiThinking(true);
     const timer = window.setTimeout(() => {
-      const move = findBestMove(game, aiDepth);
+      const move = findBestMove(game, Math.ceil(botLevel / 4), botLevel);
       if (move) {
         const next = cloneGame(game);
         const played = next.move(move);
@@ -107,7 +107,7 @@ export default function App() {
       setAiThinking(false);
     }, 350);
     return () => window.clearTimeout(timer);
-  }, [game, gameMode, aiDepth, flagged, timeControl]);
+  }, [game, gameMode, botLevel, flagged, timeControl]);
 
 
   const playedMoves = game.history({ verbose: true });
@@ -289,7 +289,7 @@ export default function App() {
               <button className="play-card" onClick={startComputerGame}><div className="play-icon green"><Sparkles size={20}/></div><div className="play-copy"><strong>Play computer</strong><span>Practice at your own pace</span></div><ChevronRight size={17}/></button>
             </div>
             <div className="time-control"><div><span className="eyebrow">TIME CONTROL</span><strong>{timeControl.replace('+', ' + ')} <small>{Number(timeControl.split('+')[0]) < 5 ? 'Bullet' : Number(timeControl.split('+')[0]) < 10 ? 'Blitz' : Number(timeControl.split('+')[0]) < 30 ? 'Rapid' : 'Classical'}</small></strong></div><select aria-label="Select time control" value={timeControl} onChange={event => { const value = event.target.value; setTimeControl(value); const seconds = Number(value.split('+')[0]) * 60; setWhiteTime(seconds); setBlackTime(seconds); setClockStarted(false); setFlagged(null); setGameMode('local'); setAiThinking(false); setGame(new Chess()); setSelected(null); setLegal([]); setNotice('Time control changed. New game ready.'); }}><option value="3+0">3 + 0</option><option value="5+0">5 + 0</option><option value="10+0">10 + 0</option><option value="15+10">15 + 10</option><option value="30+0">30 + 0</option></select></div>
-            {gameMode === 'computer' && <div className="ai-level-row"><label>COMPUTER LEVEL<select value={aiDepth} onChange={event => setAiDepth(Number(event.target.value))}><option value={1}>Beginner</option><option value={2}>Intermediate</option><option value={3}>Advanced</option></select></label><button onClick={resetGame}>Restart computer game</button></div>}
+            <div className="ai-level-row"><label>BOT DIFFICULTY<select value={botLevel} onChange={event => setBotLevel(Number(event.target.value))}>{Array.from({ length: 10 }, (_, index) => <option key={index + 1} value={index + 1}>Level {index + 1} · {['Newcomer','Casual','Learner','Club','Skilled','Strategist','Advanced','Expert','Master','Grandmaster'][index]}</option>)}</select></label><button onClick={gameMode === 'computer' ? resetGame : startComputerGame}>{gameMode === 'computer' ? 'Restart bot game' : 'Start bot game'}</button><small className="bot-level-note">{['Very forgiving moves','Learning the basics','Friendly practice','Developing tactics','Solid club play','Plans and combinations','Strong tactical play','Deep positional play','Near-master challenge','Strongest available setting'][botLevel - 1]}</small></div>
             <div className="sidebar-divider"/>
             <div className="sidebar-heading compact"><div><span className="eyebrow">MAKE YOUR MOVE</span><h2>Explore more</h2></div><button className="text-link" onClick={() => setActiveNav('Learn')}>View all <ArrowRight size={13}/></button></div>
             <div className="explore-grid">
