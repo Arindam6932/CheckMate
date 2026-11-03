@@ -2,9 +2,9 @@ import { useMemo, useState } from 'react';
 import { Chess, type Square } from 'chess.js';
 import {
   Activity, ArrowDownUp, ArrowLeft, ArrowRight, Bell, BookOpen, ChevronDown,
-  ChevronRight, CircleHelp, Crown, Flame, GraduationCap, History, LayoutGrid,
-  Menu, MessageCircle, Moon, MoreHorizontal, Play, Puzzle, Search, Settings,
-  ShieldCheck, Sparkles, Swords, Trophy, Users, Volume2, X, Zap
+  ChevronRight, CircleHelp, Crown, Flame, GraduationCap, History,
+  MessageCircle, Moon, MoreHorizontal, Play, Puzzle, Search, Settings,
+  ShieldCheck, Sparkles, Swords, Trophy, Users, Volume2, Zap
 } from 'lucide-react';
 
 type NavItem = { label: string; icon: typeof Play };
@@ -29,7 +29,6 @@ export default function App() {
   const [showProfile, setShowProfile] = useState(false);
   const [showMoves, setShowMoves] = useState(true);
   const [notice, setNotice] = useState('Your board is ready. Make the first move.');
-  const [boardTheme, setBoardTheme] = useState('classic');
   const [darkMode, setDarkMode] = useState(true);
 
   const board = useMemo(() => {
@@ -37,7 +36,8 @@ export default function App() {
     return flipped ? [...rows].reverse().map(row => [...row].reverse()) : rows;
   }, [game, flipped]);
 
-  const lastMove = game.history({ verbose: true }).at(-1);
+  const playedMoves = game.history({ verbose: true });
+  const lastMove = playedMoves[playedMoves.length - 1];
   const movePairs = useMemo(() => {
     const history = game.history();
     return Array.from({ length: Math.ceil(history.length / 2) }, (_, i) => ({
@@ -118,7 +118,7 @@ export default function App() {
             <div className="board-topline"><div className="opponent"><div className="opponent-avatar">♟</div><div><strong>Practice board</strong><span>Local game · No opponent connected</span></div></div><button className="subtle-icon" onClick={() => setNotice('Game options will be expanded in the next build phase.')}><MoreHorizontal size={20}/></button></div>
             <div className="board-frame">
               <div className="board-coordinates left">{ranks.map(n => <span key={n}>{n}</span>)}</div>
-              <div className={'chessboard ' + boardTheme}>
+              <div className="chessboard classic">
                 {board.map((row, r) => row.map((piece, c) => {
                   const square = (files[c] + ranks[r]) as Square;
                   const isLight = (r + c) % 2 === 0;
