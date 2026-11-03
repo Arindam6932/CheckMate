@@ -67,3 +67,9 @@
 .light .clock-pair .clock-active{background:#e4f5e8;border-color:#258a57;color:#176a40}
 .light .time-control select{background:#fff;border-color:#d5e2d6;color:#34483a}
 @media(max-width:520px){.clock-pair{gap:4px;margin-right:4px}.clock-pair span{font-size:9px;padding:6px}.board-topline .opponent span{font-size:9px}}
+
+
+.promotion-panel{display:flex;align-items:center;gap:12px;padding:10px 12px;margin:12px 0 0;background:#1c3025;border:1px solid #4b805e;border-radius:10px;animation:pop .16s ease-out}
+.promotion-panel>strong{font-size:10px;color:#dff1e4;white-space:nowrap}.promotion-panel>div{display:flex;gap:6px;flex:1}.promotion-panel>div button{width:35px;height:35px;border-radius:8px;border:1px solid #496653;background:#e6e8d8;display:grid;place-items:center}.promotion-panel>div button:hover{border-color:#75d6a1;transform:translateY(-1px)}.promotion-panel>div span{font-size:25px}.promotion-panel .promotion-cancel{background:transparent;border:0;color:#a5b7ac;font-size:9px}
+.light .promotion-panel{background:#e8f4e9;border-color:#b8d7bd}.light .promotion-panel>strong{color:#24412e}.light .promotion-panel>div button{background:#fff;border-color:#c8ddcb}.light .promotion-panel .promotion-cancel{color:#5e7564}
+@media(max-width:520px){.promotion-panel{gap:7px;padding:8px}.promotion-panel>div{gap:4px}.promotion-panel>div button{width:31px;height:31px}.promotion-panel>strong{font-size:9px}}
