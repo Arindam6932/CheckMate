@@ -177,7 +177,9 @@ io.on('connection', (socket: PlayerSocket) => {
 
   socket.on('game:decline-draw', (payload: { gameId?: unknown }) => {
     const room = typeof payload.gameId === 'string' ? games.get(payload.gameId) : undefined;
-    if (!room || room.status !== 'active') return;
+    const uid = socket.data.uid as string;
+    if (!room || room.status !== 'active' || !getPlayerColor(room, uid)) return sendError(socket, 'Cannot respond to this draw offer.');
+    if (!room.drawOfferBy || room.drawOfferBy === uid) return sendError(socket, 'There is no opponent draw offer to decline.');
     room.drawOfferBy = null;
     socket.to(room.id).emit('game:draw-declined');
   });
