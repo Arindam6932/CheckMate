@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         displayName: cleanName,
         updatedAt: serverTimestamp(),
       });
-      setUser({ ...auth.currentUser });
+      setUser({ ...auth.currentUser, displayName: cleanName } as User);
     },
     async resendVerification() {
       if (!auth?.currentUser) throw unavailable();
