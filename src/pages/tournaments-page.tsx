@@ -83,7 +83,7 @@ export default function TournamentsPage() {
     setError(''); setNotice(''); setBusy(true);
     try {
       const token = await user.getIdToken();
-      const base = (import.meta.env.VITE_SERVER_URL || '').replace(/\\/$/, '');
+      const base = (import.meta.env.VITE_SERVER_URL || '').replace(/\/$/, '');
       if (!base) throw new Error('Tournament server URL is not configured.');
       const response = await fetch(`${base}/tournaments/${encodeURIComponent(event.id)}/${action === 'close' ? 'close' : 'register'}`, {
         method: action === 'withdraw' ? 'DELETE' : 'POST',
