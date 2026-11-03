@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { collection, getDocs, limit, query, where, type Timestamp } from 'firebase/firestore';
 import { ArrowLeft, Check, Copy, History, Swords } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
 import { db } from '../lib/firebase';
+import { Chess, type Square } from 'chess.js';
+import { usePreferences } from '../context/preferences-context';
 
 type GameRecord = {
   gameId: string;
@@ -19,12 +21,14 @@ type GameRecord = {
 
 export default function GameHistoryPage() {
   const { user, loading } = useAuth();
+  const { boardTheme, pieceSet } = usePreferences();
   const navigate = useNavigate();
   const [games, setGames] = useState<GameRecord[]>([]);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState('');
   const [selected, setSelected] = useState<GameRecord | null>(null);
   const [copied, setCopied] = useState(false);
+  const [replayPly, setReplayPly] = useState(0);
 
   useEffect(() => {
     if (!loading && !user) navigate('/auth?mode=login', { replace: true });
@@ -53,6 +57,17 @@ export default function GameHistoryPage() {
     return () => { active = false; };
   }, [user]);
 
+  const replayMoves = useMemo(() => {
+    if (!selected?.pgn) return [] as string[];
+    try { const full = new Chess(); full.loadPgn(selected.pgn); return full.history(); }
+    catch { return [] as string[]; }
+  }, [selected]);
+  const replayGame = useMemo(() => {
+    const replay = new Chess();
+    replayMoves.slice(0, replayPly).forEach(move => replay.move(move));
+    return replay;
+  }, [replayMoves, replayPly]);
+
   if (loading || !user) return <main className="history-loading">Loading your game history…</main>;
 
   function resultLabel(record: GameRecord) {
@@ -71,7 +86,7 @@ export default function GameHistoryPage() {
           const myColor = record.whiteUid === user.uid ? 'White' : 'Black';
           const opponent = record.whiteUid === user.uid ? record.blackUid : record.whiteUid;
           const result = resultLabel(record);
-          return <button className="history-item" key={record.gameId} onClick={()=>{setSelected(record);setCopied(false);}}>
+          return <button className="history-item" key={record.gameId} onClick={()=>{setSelected(record);setCopied(false);setReplayPly(0);}}>
             <span className={`history-result ${result.toLowerCase()}`}>{result}</span>
             <div className="history-match"><b>{myColor} vs {opponent.slice(0,8)}…</b><span>{record.timeControl} · {record.moveCount} plies · {record.reason.replace(/-/g, ' ')}</span></div>
             <time>{record.finishedAt?.toDate().toLocaleDateString() || 'Recently'}</time>
@@ -80,6 +95,6 @@ export default function GameHistoryPage() {
         })}
       </div>}
     </section>
-    {selected && <div className="pgn-backdrop" onClick={()=>setSelected(null)}><section className="pgn-modal" onClick={event=>event.stopPropagation()}><div className="pgn-title"><div><span className="online-eyebrow">GAME RECORD</span><h2>Portable Game Notation</h2></div><button onClick={()=>setSelected(null)}>×</button></div><pre>{selected.pgn || 'No move notation available.'}</pre><button className="pgn-copy" onClick={()=>{void navigator.clipboard?.writeText(selected.pgn);setCopied(true);}}>{copied?<Check size={15}/>:<Copy size={15}/>} {copied?'Copied':'Copy PGN'}</button></section></div>}
+    {selected && <div className="pgn-backdrop" onClick={()=>setSelected(null)}><section className="pgn-modal replay-modal" onClick={event=>event.stopPropagation()}><div className="pgn-title"><div><span className="online-eyebrow">GAME RECORD</span><h2>Replay your game</h2></div><button onClick={()=>setSelected(null)}>×</button></div><div className="replay-layout"><div className="replay-board-frame"><div className={`chessboard board-${boardTheme} piece-set-${pieceSet} replay-board`}>{replayGame.board().map((row,r)=>row.map((piece,col)=>{const square=(('abcdefgh'[col])+String(8-r)) as Square;const light=(r+col)%2===0;return <div key={square} className={`square ${light?'light-square':'dark-square'}`}>{piece&&<span className={piece.color==='w'?'piece white-piece':'piece black-piece'}>{({wk:'♔',wq:'♕',wr:'♖',wb:'♗',wn:'♘',wp:'♙',bk:'♚',bq:'♛',br:'♜',bb:'♝',bn:'♞',bp:'♟'} as Record<string,string>)[piece.color+piece.type]}</span>}</div>}))}</div><div className="replay-controls"><button onClick={()=>setReplayPly(0)} disabled={replayPly===0}>Start</button><button onClick={()=>setReplayPly(value=>Math.max(0,value-1))} disabled={replayPly===0}>Back</button><span>{replayPly} / {replayMoves.length}</span><button onClick={()=>setReplayPly(value=>Math.min(replayMoves.length,value+1))} disabled={replayPly===replayMoves.length}>Next</button></div></div><div className="replay-notation"><pre>{selected.pgn || 'No move notation available.'}</pre><button className="pgn-copy" onClick={()=>{void navigator.clipboard?.writeText(selected.pgn);setCopied(true);}}>{copied?<Check size={15}/>:<Copy size={15}/>} {copied?'Copied':'Copy PGN'}</button></div></div></section></div>}
   </main>;
 }
