@@ -159,3 +159,20 @@
 .theme-root-frame.light.background-custom .auth-screen,
 .theme-root-frame.light.background-custom .profile-screen{background:linear-gradient(135deg,#f4f7f2dd,#f4f7f2aa),var(--custom-background-image) center/cover fixed}
 @media(max-width:520px){.settings-category-nav{top:6px;margin-left:-2px;margin-right:-2px}.custom-background-preview{height:120px}}
+
+
+/* Cloud account settings status */
+.settings-sync-banner{display:flex;align-items:center;gap:10px;margin:0 0 14px;padding:11px 13px;border:1px solid #315340;border-radius:10px;background:#14251c}
+.settings-sync-banner>div{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+.settings-sync-banner b{font-size:9px;color:#c9efd5}.settings-sync-banner small{font-size:8px;line-height:1.45;color:#91a99a}
+.settings-sync-banner>a{flex:0 0 auto;color:var(--user-accent);font-size:9px;font-weight:700;text-decoration:none}
+.sync-indicator{width:8px;height:8px;border-radius:50%;background:#69d99b;box-shadow:0 0 0 4px #69d99b20;flex-shrink:0}
+.sync-loading,.sync-saving{background:#e6bd65;box-shadow:0 0 0 4px #e6bd6520}
+.sync-error{background:#d97777;box-shadow:0 0 0 4px #d9777720}
+.settings-sync-banner.sync-error{border-color:#754545;background:#2a1c1c}
+.settings-sync-banner.sync-error b{color:#f0b4b4}
+.studio-settings button:disabled,.studio-settings input:disabled{opacity:.45;cursor:not-allowed}
+.light .settings-sync-banner{background:#eaf5eb;border-color:#c7dfcb}
+.light .settings-sync-banner b{color:#225d39}.light .settings-sync-banner small{color:#617668}
+.light .settings-sync-banner.sync-error{background:#fbefef;border-color:#e5c5c5}
+.light .settings-sync-banner.sync-error b{color:#9b4444}
