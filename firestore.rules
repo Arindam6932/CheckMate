@@ -128,6 +128,40 @@ service cloud.firestore {
       }
     }
 
+    match /tournaments/{tournamentId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.status == 'open'
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 3
+        && request.resource.data.name.size() <= 60
+        && request.resource.data.capacity is int
+        && request.resource.data.capacity >= 2
+        && request.resource.data.capacity <= 256
+        && request.resource.data.keys().hasOnly([
+          'name', 'description', 'format', 'timeControl', 'capacity',
+          'startsAt', 'status', 'createdBy', 'createdAt'
+        ]);
+      allow update: if signedIn()
+        && resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'description', 'format', 'timeControl', 'capacity', 'startsAt', 'status'
+        ]);
+      allow delete: if signedIn() && resource.data.createdBy == request.auth.uid;
+
+      match /participants/{uid} {
+        allow read: if signedIn();
+        allow create: if ownsPlayer(uid)
+          && request.resource.data.uid == request.auth.uid
+          && get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.status == 'open'
+          && request.resource.data.keys().hasOnly(['uid', 'displayName', 'joinedAt']);
+        allow delete: if ownsPlayer(uid);
+        allow update: if false;
+      }
+    }
+
     match /games/{gameId} {
       allow read: if signedIn()
         && (resource.data.whiteUid == request.auth.uid
